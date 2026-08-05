@@ -25,7 +25,7 @@ Mirrored in `skills/poteto-mode/playbooks/` and `skills/pstack/playbooks/`.
 | `/loop` | long-run/loop if available, else continue |
 | `watch-pr` scripts | optional; babysit falls back to `gh` |
 | poteto-mode `scripts/` (orch, watch-pr) | omitted from pack copy (Cursor tooling); playbooks note fallbacks |
-| benny automations | kept under `references/automations/` only |
+| benny automations | kept under `references/automations/benny/skill-templates/` as `INSTRUCTIONS.md` (not discoverable by `npx skills add`) |
 
 ## External (never in upstream pstack either)
 

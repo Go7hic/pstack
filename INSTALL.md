@@ -2,42 +2,63 @@
 
 Use this portable pack on every Agent Skills–compatible coding agent **except** Cursor (keep Cursor’s official pstack plugin there).
 
-## One source, many agents
+## Recommended: skills.sh global install
 
 ```bash
-SRC=~/workspace/pstack/skills
+npx skills add https://skills.sh/p/3EVEFJjSrRBr1mI4 -g -s '*' -y
+```
 
-# Claude Code (+ OpenCode Claude-compatible path)
-mkdir -p ~/.claude/skills
-ln -sfn "$SRC"/* ~/.claude/skills/
+Add `-a` for specific agents if you do not want every discovered agent:
 
-# Droid (Factory)
+```bash
+npx skills add https://skills.sh/p/3EVEFJjSrRBr1mI4 -g \
+  -a claude-code -a codex -a opencode -a factory-droid \
+  -s '*' -y
+```
+
+`-g` installs into each agent’s **global** skills directory (not the current project), for example:
+
+| Agent | Typical global skills dir |
+| --- | --- |
+| Claude Code | `~/.claude/skills/` |
+| Codex | `~/.codex/skills/` |
+| OpenCode | `~/.config/opencode/skills/` and/or `~/.agents/skills/` |
+| Droid (Factory) | `~/.factory/skills/` |
+| Generic / shared | `~/.agents/skills/` |
+
+After install, restart or reload the agent so it rescans skills.
+
+## Optional: wire more agents from the install tree
+
+If the CLI already installed into one global tree and you need another agent that was not selected, symlink from that install location (not from this git checkout):
+
+```bash
+# After skills.sh -g, the shared tree is usually:
+SRC=~/.agents/skills
+# If your install only landed under one agent, point SRC there instead, e.g.:
+# SRC=~/.claude/skills
+
+# Droid
 mkdir -p ~/.factory/skills
 ln -sfn "$SRC"/* ~/.factory/skills/
 
-# OpenCode / generic Agent Skills
-mkdir -p ~/.agents/skills
-ln -sfn "$SRC"/* ~/.agents/skills/
+# OpenCode
 mkdir -p ~/.config/opencode/skills
 ln -sfn "$SRC"/* ~/.config/opencode/skills/
 
-# Codex (replaces ~/.codex/skills/codex-pstack)
+# Codex (if not installed via -a codex)
 mkdir -p ~/.codex/skills
 ln -sfn "$SRC"/* ~/.codex/skills/
-# Remove the old single-skill pack so it does not shadow this one:
-rm -rf ~/.codex/skills/codex-pstack
-# Optional: migrate model overrides
-# mv ~/.codex/rules/codex-pstack-models.md ~/.codex/rules/pstack-models.md
 ```
+
+Do **not** use `~/workspace/pstack/skills` as `SRC` unless you are developing this repo itself.
 
 ### Codex cutover checklist
 
-1. Symlink this pack into `~/.codex/skills/` (above).
-2. Delete `~/.codex/skills/codex-pstack` so descriptions do not compete.
+1. Prefer `npx skills add … -g -a codex` (or symlink from `SRC` above).
+2. Delete the old pack if present: `rm -rf ~/.codex/skills/codex-pstack`
 3. Point model overrides at `~/.codex/rules/pstack-models.md` (see `adapters/codex-models.md`).
 4. Smoke-test: `/pstack` or `/how` and confirm the agent reads `adapters/codex.md` and spawns via `multi_agent_v1` (or current Codex multi-agent tools).
-
-After linking, restart or reload the agent so it rescans skills.
 
 ## Adapter selection
 
@@ -60,3 +81,13 @@ fix a tiny reproducible issue in this repo, or explain how X works with /how
 ```
 
 Confirm it reads the matching adapter and, for arena/how-complex, actually fans out subagents.
+
+## Developing this repo
+
+Local checkout only when editing the pack:
+
+```bash
+SRC=~/workspace/pstack/skills   # or your clone path
+```
+
+Day-to-day use should go through the skills.sh install path above.

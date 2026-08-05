@@ -1,6 +1,6 @@
 ---
 name: bro
-description: Restate the last message in plain human language, with no jargon.
+description: "Restate the last message in plain human language, with no jargon."
 license: MIT
 compatibility: Works with Agent Skills-compatible coding agents. Multi-agent optional; see pstack adapters.
 ---

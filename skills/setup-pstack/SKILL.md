@@ -1,9 +1,6 @@
 ---
 name: setup-pstack
-description: >-
-  Configure which models pstack uses per role. Detects available models and
-  writes an always-applied override file. Use for /setup-pstack, configure
-  pstack models, or changing pstack model choices on any coding agent.
+description: "Configure which models pstack uses per role. Detects available models and writes an always-applied override file. Use for /setup-pstack, configure pstack models, or changing pstack model choices on any coding agent."
 license: MIT
 compatibility: Works with Agent Skills-compatible coding agents. Multi-agent optional; see pstack adapters.
 ---

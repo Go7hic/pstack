@@ -1,11 +1,6 @@
 ---
 name: pstack
-description: >-
-  Portable pstack engineering system for multiple coding agents. Use for
-  poteto-mode / pstack rigor, nontrivial features, bug fixes, investigations,
-  architecture, arena/swarm parallelism, adversarial review, verification,
-  unslopped prose, or when routing across how/why/architect/interrogate and the
-  full playbook set on Cursor, Codex, Claude Code, or other Agent Skills runtimes.
+description: "Portable pstack engineering system for multiple coding agents. Use for poteto-mode / pstack rigor, nontrivial features, bug fixes, investigations, architecture, arena/swarm parallelism, adversarial review, verification, unslopped prose, or when routing across how/why/architect/interrogate on Cursor, Codex, Claude Code, or other Agent Skills runtimes."
 license: MIT
 compatibility: Requires an Agent Skills-compatible coding agent. Multi-agent optional.
 metadata:

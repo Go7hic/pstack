@@ -6,33 +6,28 @@ Same engineering system — principles, playbooks, how/why/architect/arena/swarm
 
 ## Install
 
-See **[INSTALL.md](./INSTALL.md)** for per-agent symlinks (Claude Code, Droid, OpenCode, Codex). Keep Cursor on the official pstack plugin.
-
-After the repo is on GitHub:
+See **[INSTALL.md](./INSTALL.md)** for global install and optional per-agent wiring. Keep Cursor on the official pstack plugin.
 
 ```bash
-npx skills add <owner>/pstack -g
+npx skills add https://skills.sh/p/3EVEFJjSrRBr1mI4 -g -s '*' -y
 ```
 
-Until then, symlink from the repo (example for Claude Code):
+After `-g`, skills land in each agent’s global skills dir (e.g. `~/.claude/skills/`, `~/.agents/skills/`). Do not symlink from the git checkout unless you are developing this repo.## What’s included
 
-```bash
-mkdir -p ~/.claude/skills
-ln -sfn ~/workspace/pstack/skills/* ~/.claude/skills/
-```
 
-## What’s included
+| Area          | Skills / assets                                                                                                                                                                                                                                                               |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Entry         | `pstack`, `poteto-mode`                                                                                                                                                                                                                                                       |
+| Workflow      | `how`, `why`, `recall`, `blast-radius`, `architect`, `arena`, `swarm`, `interrogate`, `figure-it-out`, `teach`, `reflect`, `automate-me`, `setup-pstack`, `show-me-your-work`, `create-verification-skill`, `maintain-verification-skill`, `tdd`, `typescript-best-practices` |
+| Quality       | `unslop`, `no-comments`, `technical-writing`, `bro`                                                                                                                                                                                                                           |
+| Principles    | all 21 `principle-*` leaf skills                                                                                                                                                                                                                                              |
+| Playbooks     | 23 under `skills/pstack/playbooks` and `skills/poteto-mode/playbooks`                                                                                                                                                                                                         |
+| Runtime       | `capability-contract.md` + adapters: `generic`, `claude-code`, `droid`, `opencode`, `codex`, `cursor`                                                                                                                                                                         |
+| Agent rubrics | `skills/pstack/references/agents/{poteto-agent,comment-sicko}.md`                                                                                                                                                                                                             |
+| Optional | `references/automations/benny` (Cursor-oriented templates under `skill-templates/`; not installable Agent Skills) |
 
-| Area | Skills / assets |
-| --- | --- |
-| Entry | `pstack`, `poteto-mode` |
-| Workflow | `how`, `why`, `recall`, `blast-radius`, `architect`, `arena`, `swarm`, `interrogate`, `figure-it-out`, `teach`, `reflect`, `automate-me`, `setup-pstack`, `show-me-your-work`, `create-verification-skill`, `maintain-verification-skill`, `tdd`, `typescript-best-practices` |
-| Quality | `unslop`, `no-comments`, `technical-writing`, `bro` |
-| Principles | all 21 `principle-*` leaf skills |
-| Playbooks | 23 under `skills/pstack/playbooks` and `skills/poteto-mode/playbooks` |
-| Runtime | `capability-contract.md` + adapters: `generic`, `claude-code`, `droid`, `opencode`, `codex`, `cursor` |
-| Agent rubrics | `skills/pstack/references/agents/{poteto-agent,comment-sicko}.md` |
-| Optional | `references/automations/benny` (Cursor-oriented, not a skill) |
+
+
 
 ## How portability works
 
@@ -41,12 +36,16 @@ ln -sfn ~/workspace/pstack/skills/* ~/.claude/skills/
 3. Prefer real subagent fan-out (`parallel`) on modern hosts. Collapse only when spawn tools are missing or denied.
 4. Model slugs are resolved via `/setup-pstack` overrides + `model_role`, not hard-required Cursor defaults.
 
+
+
 ## Not bundled (same as upstream)
 
 Upstream poteto-mode references these but does not ship them in pstack:
 
 - `deslop`, `control-cli`, `control-ui` (Cursor `cursor-team-kit`) — use local equivalents
 - Cursor built-in `/create-skill` — use your agent’s skill authoring flow
+
+
 
 ## Credits
 
