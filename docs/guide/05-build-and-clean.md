@@ -1,13 +1,13 @@
 # Build the change and clean the diff
 
-The build playbooks share one discipline. Say what you observed, let the playbook demand the evidence. This page shows what to put in the prompt for each common build task, then the cleanup habit that keeps diffs reviewable.
+The build playbooks share one discipline: state what you observed and let the playbook demand the missing evidence. This page shows what to put in the prompt for common build tasks, then the cleanup habits that keep diffs reviewable.
 
 ## Prompt each build playbook with what you know
 
 A bug prompt states the symptom and asks for a reproduction first:
 
 ```text
-/poteto-mode this command emits two records after a retry. repro first, then fix and verify.
+/poteto-mode this command emits two records after a retry. reproduce first, then fix and verify.
 ```
 
 A feature prompt states the behavior and what must not change:
@@ -19,57 +19,73 @@ A feature prompt states the behavior and what must not change:
 A refactoring prompt pins behavior before structure moves:
 
 ```text
-/poteto-mode move parsing into one module, zero behavior change. record the current output first and prove it's unchanged after.
+/poteto-mode move parsing into one module, zero behavior change. record the current output first and prove it is unchanged after.
 ```
 
-A perf prompt states the measurement, not a vibe:
+A performance prompt states the measurement rather than a vague impression:
 
 ```text
-/poteto-mode startup takes 1.8s on this fixture. trace it, fix the measured cause, show me before and after.
+/poteto-mode startup takes 1.8s on this fixture. trace it, fix the measured cause, and show before and after.
 ```
 
-Each of these routes to its playbook ([Bug fix](../../skills/poteto-mode/playbooks/bug-fix.md), [Feature](../../skills/poteto-mode/playbooks/feature.md), [Refactoring](../../skills/poteto-mode/playbooks/refactoring.md), [Perf issue](../../skills/poteto-mode/playbooks/perf-issue.md)), and the playbook supplies the steps you didn't type: reproduce before fixing, name the data shape before implementing, pin behavior before restructuring, profile before optimizing.
+These route to the [Bug fix](../../skills/poteto-mode/playbooks/bug-fix.md), [Feature](../../skills/poteto-mode/playbooks/feature.md), [Refactoring](../../skills/poteto-mode/playbooks/refactoring.md), and [Perf issue](../../skills/poteto-mode/playbooks/perf-issue.md) playbooks. The playbook adds the steps you did not type: reproduce before fixing, name the data shape before implementing, pin behavior before restructuring, and profile before optimizing.
 
-For sustained improvement of one number, there's the [Hillclimb playbook](../../skills/poteto-mode/playbooks/hillclimb.md). Give it the metric, a target, and a floor on attempts, and it loops one hypothesis at a time with a frozen measurement harness. It keeps wins and reverts everything else.
+For sustained improvement of one number, use the [Hillclimb playbook](../../skills/poteto-mode/playbooks/hillclimb.md). Give it the metric, target, and stop condition. It freezes the measurement harness, tries one hypothesis at a time, keeps measured wins, and reverts everything else.
 
-## Write the failing test first with `/tdd`
+## Write a failing test first when it is the right seam
 
-When a bug has a cheap local test path, the whole prompt can be two words:
+When a bug has a cheap local test path, invoke:
 
 ```text
 /tdd implement
 ```
 
-In context, that's enough. [`/tdd`](../../skills/tdd/SKILL.md) writes the smallest test that fails for the intended reason, then the fix, then reruns the test. If a test would need broad harness setup or brittle mocks, the skill says so and uses the closest executable check instead. Don't force a test where a real command is stronger evidence.
+In context, that is enough. [`/tdd`](../../skills/tdd/SKILL.md) writes the smallest test that fails for the intended reason, implements the fix, and reruns the test. When a test would require broad harness setup or brittle mocks, use the closest executable real-surface check instead. Do not force a unit test when a real command or browser reproduction is stronger evidence.
 
-## Let the TypeScript rules load themselves
+## Let language-specific discipline load when needed
 
-[`typescript-best-practices`](../../skills/typescript-best-practices/SKILL.md) has no slash command in your workflow. It loads whenever the agent touches a `.ts` or `.tsx` file and turns the type-system principles into concrete rules: discriminated unions, `unknown` at boundaries, exhaustive variants, schema-derived types.
+[`typescript-best-practices`](../../skills/typescript-best-practices/SKILL.md) translates the type-system principles into concrete TypeScript rules: discriminated unions, `unknown` at boundaries, exhaustive variants, and schema-derived types. It can be invoked directly or selected automatically by a host that supports implicit skill routing.
 
 ## Clean before you commit
 
-The [Opening a PR playbook](../../skills/poteto-mode/playbooks/opening-a-pr.md) runs `/deslop` on the diff before each commit and applies [`/unslop`](../../skills/unslop/SKILL.md) to the PR description and commit bodies. `/deslop` ships in the `cursor-team-kit` plugin, not in pstack. If you don't have it, ask for the same outcome in plain words: remove narrating comments, unsupported guards, dead compatibility paths, and unrelated edits.
+The [Opening a PR playbook](../../skills/poteto-mode/playbooks/opening-a-pr.md) requires a simplicity pass before commit and applies [`/unslop`](../../skills/unslop/SKILL.md) to pull-request descriptions and commit bodies.
 
-For prose, `/unslop` takes a target and any extra rules you have:
+Use a host-provided code-cleanup tool when one is available. The required outcome is portable even when the tool name is not:
+
+- remove narrating comments;
+- remove unsupported defensive guards;
+- delete dead compatibility paths;
+- remove speculative abstractions;
+- revert unrelated edits;
+- reduce wrappers and layers that add no capability;
+- keep the smallest diff that proves the outcome.
+
+For prose, `/unslop` accepts a target and any extra rules:
 
 ```text
-/unslop the readme changes, no emdashes
+/unslop the readme changes, no em dashes
 ```
 
-You'll develop your own shorthand. The skill reads intent fine from terse prompts like `unslop that, tighten it`.
+Terse follow-ups such as `unslop that and tighten it` are fine when the target is clear from context.
 
-## Strip the comments with `/no-comments`
+## Review comments with `/no-comments`
 
-Comments need their own pass, and not from the agent that wrote them. An author defends its comments the way you'd defend yours. So before review, hand them to fresh eyes:
+Comments need a separate pass from an agent that did not write them:
 
 ```text
 /no-comments the diff
 ```
 
-[`/no-comments`](../../skills/no-comments/SKILL.md) spawns [Comment Sicko](../../agents/comment-sicko.md), a read-only reviewer with a short keep list: license headers, doc comments on a public API, links that explain what code can't, behavior forced by an external dependency you can't reshape. Everything else goes. A surprise in your own code gets no such pass. The comment comes back as a refactor flag, and `/no-comments` fixes the flags it accepts at the root cause. When a comment claims a constraint, "do not remove", the skill offers to encode the claim as a type, test, or lint. Either way, the comment comes out.
+[`/no-comments`](../../skills/no-comments/SKILL.md) uses the [Comment Sicko rubric](../../skills/pstack/references/agents/comment-sicko.md). The keep list is narrow: required license headers, public-API documentation, links that explain an external constraint, or rationale the code cannot encode.
 
-The division of labor is worth keeping straight. `/deslop` cleans slop out of the code, `/unslop` cleans it out of prose, and `/no-comments` hands the comments to a reviewer who didn't write them.
+A comment that narrates obvious steps should disappear. A comment that reveals surprising code should usually trigger a design or naming fix. When a comment claims a durable constraint, encode it as a type, test, lint, schema, or runtime check where possible.
 
-**Pitfall:** cleanup is not optional polish. A diff with narrating comments and defensive dead weight reads as unfinished to reviewers, and the extra code is where the next bug hides. If the diff feels padded, say `deslop it` before you commit, not after review calls it out.
+The division of labor is:
+
+- the simplicity pass removes code and structural padding;
+- `/unslop` cleans human- and agent-facing prose;
+- `/no-comments` applies independent judgment to comments and their underlying causes.
+
+**Pitfall:** cleanup is not optional polish. Narrating comments, defensive dead weight, and unrelated edits make a diff harder to trust and create more surface for the next bug. Clean before review, not after reviewers identify the padding.
 
 Next: [Verify and ship](./06-verify-and-ship.md).
