@@ -1,6 +1,6 @@
 ---
 name: recall
-description: "Reconstruct your recent working context from your own chat history, live state, and the shared record (user reports, prior fixes, incidents), then hand back a tight current-state brief. Use for 'recall my work on X', 'catch me up', 'what have I been working on', 'where did I leave off', before starting or resuming work."
+description: "Reconstruct recent working context from authorized conversation history, live repository state, and the shared engineering record, then return a tight current-state brief. Use for \"recall my work on X\", \"catch me up\", \"what have I been working on\", or \"where did I leave off\"."
 license: MIT
 compatibility: Works with Agent Skills-compatible coding agents. Multi-agent optional; see pstack adapters.
 ---
@@ -9,43 +9,108 @@ compatibility: Works with Agent Skills-compatible coding agents. Multi-agent opt
 
 ## Portability (required)
 
-This skill is part of the portable **pstack** pack for multiple coding agents.
+1. Read the `pstack` capability contract and the active host adapter before delegation.
+2. Obtain conversation history only through resources the host exposes for the current user and authorized scope. Never assume one transcript directory or schema.
+3. Use `parallel` with read-only `explore` helpers for independent history slices and shared-record sources.
+4. Resolve history mining through `model_role:fast_explore` and final synthesis through `model_role:judgment`.
+5. When history or helper access is unavailable, use the visible conversation, repository state, and a stated evidence gap rather than inventing memory.
 
-1. Read `pstack` skill `references/capability-contract.md` (or this skill's `references/capability-contract.md` if present).
-2. Detect the runtime and read one adapter before any delegation:
-   - Cursor → `references/adapters/cursor.md` (under the `pstack` or `poteto-mode` skill)
-   - Codex → `references/adapters/codex.md`
-   - Anything else / unsure → `references/adapters/generic.md`
-3. Translate upstream Cursor mechanics through the adapter. Do **not** invent Cursor `Task` / `poteto-agent` / model slugs on runtimes that lack them.
-4. If multi-agent tools are unavailable, collapse parallel work onto the main agent and say so briefly.
+## Purpose
 
-Capability verbs: `explore`, `implement`, `review`, `parallel`, `ask_user`, `verify`, `model_role`.
+Before work starts or resumes, rebuild the user's recent context and hand back a concise capsule of where things stand and what should happen next.
 
+Recall combines two records:
 
-**Before you start or resume work, you rebuild the user's recent working context and hand back a tight capsule of where things stand now and what to do next.** Use for "recall my work on X", "catch me up", "what have I been working on", or "where did I leave off".
+- **Personal working history.** Goals, decisions, corrections, branches, pull requests, and unfinished threads from authorized prior conversations.
+- **Shared engineering record.** Source control, tickets, documents, team discussion, incidents, errors, and current production or repository state. Use **why** to search this record.
 
-Keep it tight and on-topic. Read only what the in-scope threads need, then stop. The heavy reading fans out to parallel subagents. The main thread keeps only their findings and the final brief.
+A feature with a long bug tail cannot be reconstructed from personal conversations alone. Conversely, tickets and commits may omit the user's intent. The brief reconciles both.
 
-Your context lives in two records. Your own chat history holds what you did and decided. The shared record holds everything that happened around the same code under other names: the symptoms users keep reporting, the fixes that shipped and got reverted, the errors still firing in prod. That second record is what the **why** skill searches, across source control, the issue tracker, chat and issue channels, long-form docs, and error tracking. A feature with a long bug tail keeps most of its story there, so don't reconstruct it from your transcripts alone.
+## Process
 
-Transcripts live at `~/.cursor/projects/<slug>/agent-transcripts/<uuid>/<uuid>.jsonl`, where `<slug>` is the workspace path with the leading slash dropped and each "/" turned into "-" (so `/Users/you/proj` becomes `Users-you-proj`). Every line is one chat message.
+### 1. Classify the request
 
-1. Classify, then route. One specific prior chat to resume is the `session-pickup` playbook, not this. Turning habits into a durable skill is `automate-me`. A human-readable summary of your work is a different task. Recall loads working context across recent chats before you act. If the user already gave you a full state capsule (paths, branch, the change), use it and skip the mining.
-2. Lock the scope before searching. Pin the window ("recent" is a real range, default the last 7 days), the topic if named, and the workspace (default the active one; never read another project's transcripts without being asked). State the scope back. Never quietly turn "all" into "recent N".
-3. Fan out across your chat history. Spawn parallel subagents on a fast, cheap model, each taking a slice of the corpus, since searching transcripts is grunt work. Tell every subagent to order candidates by real modification time (`ls -t`) and never by UUID name, grep the topic first and then read only the matching chats and only their relevant regions, and skip the current chat plus obvious noise (subagent, eval, and test chats). Each returns the same schema, one block per chat: topic, the user's goal, decisions, open threads, struggles and corrections, and artifacts (PRs, tickets, branches), each citing the chat UUID. For one or two chats, skip the fan-out and search directly. The raw transcripts stay in the subagents. The main thread gets only their findings.
-4. Sweep the shared record whenever the topic names a feature, file, subsystem, area, or bug. This is the default, not a judgment call, and "my work on X" does not exempt it. A named target carries history you never see in your own transcripts, and that history is the point of the sweep. Hand it to the **why** skill's source investigators, but steer their question from "why was this built this way" to "what's the current state, what's been tried and didn't hold, and what are users still reporting". Reuse its per-source playbooks so you don't reinvent each query vocabulary, run the investigators in parallel with the chat-history mining, and inherit its posture: one investigator per source, null results are findings, skip an unavailable MCP and say so. Fold what comes back into the brief. Skip this step only for pure activity recall with no named target ("what did I do this week"), where your own history and live state are the entire answer.
-5. Verify against live state. A transcript or a stale ticket is history, not current truth, so take the PRs, branches, and tickets that the mining and the sweep surfaced and check them with `git` and `gh`. When the answer hinges on what an agent actually did (the tools it ran, files it read, errors it hit), read the full transcript, not just a trimmed local copy.
-6. Write the brief to the contract below. Group by thread. Stay on the named topic.
+Route one specific handoff or transcript to the **Session pickup** playbook. Route “turn my habits into a skill” to **automate-me**. Recall is for rebuilding context across several recent threads before choosing the next move.
+
+When the user already provides a complete state capsule with branch, paths, decisions, and current goal, use it and skip unnecessary history mining.
+
+### 2. Lock the scope
+
+State:
+
+- topic or named target;
+- time window, defaulting to the last seven days when “recent” is unspecified;
+- active workspace or repository;
+- whether the user wants personal activity only or a full shared-record sweep.
+
+Do not silently reinterpret “all” as a smaller window. Do not read another workspace's history without authorization.
+
+### 3. Mine authorized working history
+
+Use the best current-host source, in order:
+
+1. a first-class conversation-history or session-search capability;
+2. a user-provided export, handoff, transcript reference, or saved context resource;
+3. the visible current conversation;
+4. a stated gap when none is available.
+
+For a broad corpus, use `parallel` with bounded `explore` helpers, one time or topic slice per helper. Helpers read only the scoped material and return one block per relevant thread:
+
+- user's goal;
+- decisions and corrections;
+- work completed;
+- open questions and blockers;
+- branches, pull requests, tickets, files, or artifacts;
+- evidence pointer supplied by the host.
+
+Order sources by real timestamps exposed by the host. Skip the current conversation, helper-only noise, and unrelated sessions. For one or two threads, search directly instead of fanning out.
+
+### 4. Sweep the shared record
+
+When the topic names a feature, file, subsystem, project, or bug, run **why** with a current-state question:
+
+> What is the current state, what has already been tried, what failed or was reverted, and what are users or operators still reporting?
+
+Run its available source investigators in parallel with history mining. Preserve positive findings, null results, contradictions, and unavailable-source gaps.
+
+Skip this step only for pure personal activity recall with no named technical target, such as “what did I work on this week?”
+
+### 5. Verify live state
+
+History is not current truth. Check every surfaced branch, pull request, ticket, release, or artifact through live repository and connected-system tools.
+
+Confirm:
+
+- merged, open, closed, or reverted status;
+- exact branch and head revision;
+- dirty or uncommitted work;
+- current CI and review state when relevant;
+- whether a claimed fix still exists in the current code;
+- whether an old blocker has already been resolved.
+
+When the answer depends on what an earlier agent actually did, use an authorized full action trace when available. Do not infer tool usage from a summary.
+
+### 6. Write the brief
+
+Stay on the named topic. An adjacent thread appears only when it blocks the next move.
 
 ## Output contract
 
-Lead with the capsule, then the thread status, then the problems, then the next move. Deeper detail goes below or gets cut.
+- **Capsule.** At most five bullets describing the work and overall state.
+- **Threads.** One line each with exactly one status tag: `[merged #N]`, `[open PR #N]`, `[in flight <branch>]`, `[verified, uncommitted]`, `[reverted #N]`, or `[planned, not started]`.
+- **Problems.** At most five recurring symptoms, failed approaches, reverted fixes, or unresolved risks.
+- **Evidence gaps.** History or shared sources that were unavailable or searched without useful results.
+- **Next move.** One concrete highest-value action.
 
-- **Capsule.** At most 5 bullets. What this work is and where it stands overall.
-- **Threads.** One line each, prefixed with exactly one status tag: `[merged #N]`, `[open PR #N]`, `[in flight <branch>]`, `[verified, uncommitted]`, `[reverted #N]`, or `[planned, not started]`. A thread with no tag is not done yet, so tag it.
-- **Problems.** At most 5, the recurring ones. Include the symptoms users keep reporting and any fix that shipped and was reverted, so the next attempt starts where the last one failed.
-- **Next move.** The single most useful next action, concrete.
+Apply **unslop** to the brief. Cite working-history findings through the evidence identifiers the host provides and shared-record findings through their native source references. Remove private context before any public output.
 
-An adjacent feature or ticket stays out unless it blocks this one. When the capsule and thread lines outgrow a screen, cut detail before you cut threads. Write the brief through the **unslop** skill, cite chat findings by UUID and shared-record findings by their source (PR #, ticket ID, chat permalink, error-tracker issue), and sanitize private context before any public output.
+**Reply:** the brief in the contract above.
 
-**Reply:** the brief, to the contract above.
+## Model roles
+
+| Role | Use |
+| --- | --- |
+| `fast_explore` | scoped conversation-history and shared-record mining |
+| `judgment` | reconciliation, current-state synthesis, and next-action selection |
+
+If no role override is available, inherit the parent session model.
