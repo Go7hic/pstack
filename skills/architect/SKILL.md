@@ -1,6 +1,6 @@
 ---
 name: architect
-description: "Sketch types, signatures, and module structure before code, then stay in the loop while implementation fills in. Use for /architect, 'architect this', 'design this', or non-trivial work where jumping to code would lock in the wrong shape."
+description: "Sketch types, signatures, caller usage, and module boundaries before implementation, then keep the sketch honest while code fills in. Use for /architect, \"architect this\", \"design this\", or non-trivial work where jumping to code could lock in the wrong shape."
 license: MIT
 compatibility: Works with Agent Skills-compatible coding agents. Multi-agent optional; see pstack adapters.
 ---
@@ -9,105 +9,164 @@ compatibility: Works with Agent Skills-compatible coding agents. Multi-agent opt
 
 ## Portability (required)
 
-This skill is part of the portable **pstack** pack for multiple coding agents.
+This skill is part of the portable **pstack** pack.
 
-1. Read `pstack` skill `references/capability-contract.md` (or this skill's `references/capability-contract.md` if present).
-2. Detect the runtime and read one adapter before any delegation:
-   - Cursor → `references/adapters/cursor.md` (under the `pstack` or `poteto-mode` skill)
-   - Codex → `references/adapters/codex.md`
-   - Anything else / unsure → `references/adapters/generic.md`
-3. Translate upstream Cursor mechanics through the adapter. Do **not** invent Cursor `Task` / `poteto-agent` / model slugs on runtimes that lack them.
-4. If multi-agent tools are unavailable, collapse parallel work onto the main agent and say so briefly.
+1. Read the `pstack` capability contract and the adapter for the active coding agent before delegation.
+2. Use `explore` for grounding, `parallel` through `arena` for competing sketches, `implement` for bounded code work, `review` for independent pressure, and `verify` for the resulting contract.
+3. Resolve workers through `model_role`; never require a vendor-specific model identifier or helper type.
+4. Keep implementation write scopes disjoint. When helpers are unavailable, perform the same phases on the lead agent rather than skipping design work.
 
-Capability verbs: `explore`, `implement`, `review`, `parallel`, `ask_user`, `verify`, `model_role`.
+## Goal
 
-
-Design before implementing. Sketch types, function signatures, class shapes, and module boundaries with `not implemented` bodies and pseudocode. Synthesize across multiple model perspectives, then fill in code against the chosen sketch. If implementation proves the sketch wrong, throw it out and redesign.
+Design before implementing. Start with caller usage, derive types and interfaces, compare structurally different solutions, and implement against the selected sketch. When implementation repeatedly fights the design, discard the sketch and redesign instead of adding escape hatches.
 
 ## Start
 
-Open a todolist with one entry per phase before starting. Autonomous mode without checkpoints needs the list to show phase position and keep phases from silently disappearing.
+Create a todo list with one item per phase:
 
 1. Ground
 2. Sketch
 3. Agree
 4. Implement
-5. Scrap
+5. Scrap or confirm
+
+A visible phase list prevents autonomous work from silently dropping design or verification steps.
 
 ## Phase A: Ground the problem
 
-Build a real mental model of every system the new code touches. Run the **how** skill over the relevant subsystems. Critique mode if existing structure is the constraint or the design must push back on it.
+Build a real mental model of every existing subsystem the change touches.
 
-Naming a file isn't grounding. Produce the traced model `how` prescribes. If the design redefines ownership or layering, also run the **why** skill on the existing shape so the rationale becomes a constraint, not a guess.
+Run **how** over the relevant runtime and ownership paths. Use How's critique mode when the existing structure is itself the constraint. When the change moves ownership, removes a compatibility path, or contradicts an established decision, also run **why** so historical rationale becomes evidence rather than guesswork.
 
-Skip Phase A only when the work is genuinely greenfield with no surrounding system to integrate.
+Grounding must identify:
 
-## Phase B: Sketch
+- current caller usage and public interfaces;
+- data ownership and mutation boundaries;
+- runtime order, retries, concurrency, and failure behavior;
+- existing tests and verification surfaces;
+- constraints that the new shape must preserve;
+- facts that remain unknown.
 
-Run the **arena** skill with the design-sketch task and the Phase A grounding artifacts. Pass `references/runner-prompt.md` as each runner's prompt. Each candidate produces a design package shaped per `references/rationale-template.md`: the caller's usage written first, then the type sketch, function signatures, module map, and prose rationale derived from it.
+Naming files is not grounding. Trace the behavior from trigger to effect.
 
-Use your configured architect runners (defaults `claude-fable-5-thinking-max`, `gpt-5.6-sol-max`, `grok-4.5-fast-xhigh`, `claude-opus-5-thinking-xhigh`).
+Skip this phase only for genuinely greenfield work with no surrounding integration boundary.
 
-Design it twice. Require at least two structurally distinct candidates before synthesis, even when the first looks sufficient. This is the **exhaust-the-design-space** principle skill made concrete. Whole-shape alternatives, not point fixes inside one shape.
+## Phase B: Produce competing sketches
 
-Screen every candidate against [`references/design-red-flags.md`](references/design-red-flags.md) before synthesis. Reject or revise shallow modules, information leakage, temporal decomposition, and pass-through methods.
+Run **arena** with the design-sketch task and the Phase A evidence. Use `references/runner-prompt.md` for each candidate and `references/rationale-template.md` for the output package.
 
-Compare viable candidates on interface depth. Prefer the design that hides more complexity behind a smaller, simpler public surface. A rich interface can keep call chains short by concentrating capability instead of scattering it across layers.
+Each candidate writes, in this order:
 
-Arena returns one synthesized design package. The synthesis decision populates the rationale's "Synthesis decision" section.
+1. representative caller usage;
+2. the named data shape and its organizing structure;
+3. types and function signatures;
+4. module and ownership boundaries;
+5. invariants and error behavior;
+6. migration or compatibility implications;
+7. alternatives rejected and why.
 
-## Phase C: Agree (opt-in)
+Use at least two structurally different candidates. Point variations inside one architecture do not satisfy the **exhaust-the-design-space** principle.
 
-Default: proceed directly to implementation with the synthesized design. No human checkpoint.
+Resolve candidate models through the configured architect panel, using `model_role:critic` for independent sketches and `model_role:judgment` for cross-judging or synthesis. Prefer diverse model families when the adapter supports selection.
 
-Opt in to a checkpoint when the invoker explicitly asks: "/architect with checkpoint," "stop and show me before implementing," or similar. Then surface the synthesized design and pause for sign-off.
+Screen every candidate against `references/design-red-flags.md`. Reject or revise designs with:
 
-The synthesis can ship as its own commit either way. That's the "scaffold first" mode of the **foundational-thinking** principle skill; subsequent commits read as filling in bodies against a stable contract. Planned and scoped breakage during fill-in is fine, per the **outcome-oriented-execution** principle skill. For adversarial pressure on the design before implementing, run the **interrogate** skill on the synthesized sketch.
+- shallow pass-through modules;
+- information leakage across boundaries;
+- temporal decomposition where callers must know internal order;
+- repeated representation conversions;
+- shared mutable state introduced only to make delegation convenient;
+- interfaces that expose implementation decisions rather than capabilities.
 
-If the human pushes back on the shape (in a checkpoint or after the fact), treat that as Phase A evidence. Re-ground and re-run Phase B before writing more code.
+Compare viable candidates on interface depth, locality, invalid-state prevention, and reader load. Prefer the shape that hides more complexity behind a smaller coherent surface without inventing speculative abstraction.
+
+Arena returns one synthesized design package and a record of the selected base, grafted ideas, and rejected alternatives.
+
+## Phase C: Agree when a checkpoint is requested
+
+Default behavior is to continue with the synthesized design. Do not add a human checkpoint for a reversible engineering decision unless the user asked for one.
+
+Pause before implementation when the invoker explicitly requests a checkpoint or when the design creates an irreversible external contract, destructive migration, deployment, or customer-visible commitment.
+
+When a checkpoint is active, show:
+
+- caller usage;
+- public types and signatures;
+- module map;
+- the key trade-off;
+- what will be deleted or migrated;
+- how the design will be verified.
+
+User pushback becomes new grounding evidence. Return to Phase A and rerun the competing-sketch phase rather than patching the rejected design.
+
+The accepted sketch may land as its own scaffold commit when doing so makes later implementation commits easier to review. Planned temporary breakage is acceptable only inside a bounded branch and with an explicit verification path.
+
+Use **interrogate** on the sketch before implementation when the design is contested, security-sensitive, concurrency-heavy, or difficult to reverse.
 
 ## Phase D: Implement against the sketch
 
-Replace `not implemented` bodies with code, pseudocode with logic. The synthesized sketch is the contract.
+Use `implement` with `model_role:feature_impl` for bounded, spec-driven code work. Use `model_role:bug_impl` when the design is part of a high-stakes fix grounded in runtime evidence.
 
-Deviations from the sketch are signal worth surfacing, not friction to absorb silently. If a function needs a parameter the sketch didn't anticipate, ask whether the sketch was wrong, the requirement was missed, or the implementation is overreaching. Surface it; don't bolt it on.
+Every implementation assignment includes:
 
-## Phase E: Scrap when the architecture is wrong
+- exact file or module ownership;
+- the caller usage and selected data shape;
+- public signatures and invariants;
+- disjoint write scope;
+- success and verification criteria;
+- a requirement to report deviations from the sketch.
 
-If implementation keeps producing friction the sketch can't absorb, throw the sketch out. Don't bolt fixes onto a wrong design, per the **redesign-from-first-principles** and **fix-root-causes** principle skills.
+The lead reads the diff and owns the final judgment. A helper's completion summary is not review.
 
-The signal is a *pattern*, not single instances. Tells:
+Replace `not implemented` bodies with real behavior while keeping the selected interface stable. A required deviation is a design signal. Surface it and classify it:
 
-- The same shape of workaround appearing repeatedly across unrelated code.
-- Multiple unrelated edge cases that all need special-case branches.
-- Types that need escape hatches (`any`, casts, optional fields always set in practice) to compile.
-- The "we need a lock" reflex when the sketch said the state wasn't shared.
-- Callers having to know the abstraction's internal rules to use it.
-- Two or more independent Phase D deviations of the same shape across the implementation. Surfacing deviations is Phase D's job; a repeated pattern of them is Phase E's trigger.
+- the sketch missed a requirement;
+- the implementation is overreaching;
+- an existing constraint was misunderstood;
+- the interface or ownership boundary is wrong.
 
-Use judgment. A few edge cases don't condemn an architecture. Some problems are legitimately complex; complexity in the data is not complexity in the design. The rewrite signal is repeated friction of the same shape, not single hard cases.
+Do not silently add parameters, casts, optional fields, global state, or side channels to make the code fit.
 
-When you scrap:
+Use `verify` at the public seam and on the matching runtime surface. The sketch is accepted only when callers can use it as designed and the implementation hides the promised complexity.
 
-1. Re-run the **how** skill over what's been built. The implementation lessons enter the new design as inputs, not vibes.
-2. Redesign as if the new constraints had been day-one assumptions, per redesign-from-first-principles.
-3. Subtract before adding, per the **subtract-before-you-add** principle skill. The new sketch should be smaller than the old one before it grows.
-4. Return to Phase B and re-run arena.
+## Phase E: Scrap a wrong architecture
+
+Scrap and redesign when implementation shows a repeated pattern of friction, not merely one difficult edge case. Signals include:
+
+- the same workaround appears in unrelated call sites;
+- several edge cases require the same special branch;
+- types need casts, `any`, or optional fields that are always present in practice;
+- callers must know internal sequencing or representation rules;
+- a lock or shared store appears because ownership was never separated;
+- two or more independent deviations expose the same missing concept;
+- verification requires bypassing the public interface.
+
+When the threshold is reached:
+
+1. stop adding patches;
+2. run **how** over what was learned during implementation;
+3. redesign with the new constraints treated as day-one assumptions;
+4. subtract the failed scaffolding before adding a replacement;
+5. return to Phase B and run Arena again.
+
+Complexity inherent in the domain is not proof of a bad architecture. Repeated complexity caused by the chosen shape is.
+
+When the architecture holds, record the verification result and close the phase as confirmed rather than scrapped.
 
 ## Outputs
 
-The caller's usage is written first and the type sketch derived from it. One file with new types and signatures for small changes; module map plus type definitions for larger work. The rationale ships alongside, shaped per `references/rationale-template.md`, including the usage sketch and the synthesis decision.
+The design package starts with caller usage and derives everything else from it.
+
+For a small change, produce one design file with usage, types, signatures, invariants, and rationale. For a larger change, add a module map, migration sequence, and verification plan. Keep the synthesis decision and rejected alternatives beside the design so future maintainers can understand why this shape won.
 
 ## Model roles
 
-Do not hard-require Cursor model slugs. Resolve models through `model_role` and the active adapter:
-
 | Role | Use |
 | --- | --- |
-| `fast_explore` | Broad read-only fan-out, mechanical edits |
-| `feature_impl` | Spec-driven implementation / refactoring |
-| `bug_impl` | High-stakes fixes after evidence |
-| `judgment` | Architecture, synthesis, prose |
-| `critic` | Adversarial / panel review |
+| `fast_explore` | broad grounding slices through How |
+| `feature_impl` | bounded implementation against an accepted sketch |
+| `bug_impl` | high-stakes implementation after root-cause evidence |
+| `critic` | independent design candidates and adversarial pressure |
+| `judgment` | cross-judging, synthesis, and final architecture decisions |
 
-If a local override file exists, prefer it. If a slug is unavailable, fall back to the parent model and say so.
+If no role override is available, inherit the parent session model.
