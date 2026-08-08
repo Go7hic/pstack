@@ -23,8 +23,10 @@ Do not edit both sides of a mirror independently. The portable audit rejects dri
 After pulling newer upstream Cursor pstack sources:
 
 ```bash
-python3 scripts/import_upstream.py --upstream-root /path/to/cursor/plugins/pstack
-# or refresh mirrors only:
+# Verify mirrors without rewriting (CI uses this).
+python3 scripts/sync_mirrors.py --check
+
+# Refresh mirrors after local playbook/adapter/agent edits.
 python3 scripts/sync_mirrors.py
 ```
 
@@ -36,9 +38,8 @@ Run this before every pull request:
 
 ```bash
 python3 -m compileall -q scripts
-python3 scripts/sync_mirrors.py
-python3 scripts/audit_portability.py
-python3 scripts/audit_portability.py --strict --changed-from origin/main
+python3 scripts/sync_mirrors.py --check
+python3 scripts/audit_portability.py --strict
 python3 scripts/check_markdown_links.py
 python3 scripts/validate_model_override.py scripts/fixtures/model-override/valid.md
 python3 scripts/port_to_portable.py --check-idempotent

@@ -26,10 +26,11 @@ jobs:
       - name: Compile maintenance scripts
         run: python3 -m compileall -q scripts
 
-      - name: Sync mirrors and check pack structure
-        run: |
-          python3 scripts/sync_mirrors.py
-          python3 scripts/audit_portability.py
+      - name: Check mirrors without rewriting the checkout
+        run: python3 scripts/sync_mirrors.py --check
+
+      - name: Strict repository portability audit
+        run: python3 scripts/audit_portability.py --strict
 
       - name: Check markdown relative links
         run: python3 scripts/check_markdown_links.py
@@ -45,21 +46,23 @@ jobs:
       - name: Check import idempotency without touching workspace
         run: python3 scripts/port_to_portable.py --check-idempotent
 
-      - name: Reject unpinned upstream manifest on main
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      - name: Validate upstream manifest shape
         run: |
           python3 - <<'PY'
           import json
+          import re
           from pathlib import Path
           data = json.loads(Path("UPSTREAM_MANIFEST.json").read_text())
           commit = data["upstream"].get("commit")
-          # Allow UNPINNED until the first real upstream sync lands a SHA.
-          # Fail only if the field is missing.
           assert commit, "upstream.commit missing"
+          # UNPINNED is allowed until the first real upstream sync.
+          # After that, require a full 40-char git SHA.
+          if commit != "UNPINNED" and not re.fullmatch(r"[0-9a-f]{40}", commit):
+              raise SystemExit(f"upstream.commit must be UNPINNED or a 40-char SHA, got {commit!r}")
           print(f"upstream.commit={commit}")
           PY
 
-      - name: Reject new portability regressions
+      - name: Report changed-file portability scan on pull requests
         if: github.event_name == 'pull_request'
         run: >-
           python3 scripts/audit_portability.py

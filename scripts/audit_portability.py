@@ -329,36 +329,45 @@ def check_shared_playbook_refs(findings: list[Finding]) -> None:
                 Finding("ERROR", name, "shared playbook reference mirror has drifted")
             )
 
+    for name in (
+        "capability-contract.md",
+        "host-lifecycle.md",
+        "workflow-quality.md",
+        "model-override.schema.json",
+    ):
+        left = SKILLS / "pstack" / "references" / name
+        right = SKILLS / "poteto-mode" / "references" / name
+        if not left.is_file() or not right.is_file():
+            findings.append(
+                Finding("ERROR", name, "shared pstack reference mirror is missing")
+            )
+        elif left.read_bytes() != right.read_bytes():
+            findings.append(
+                Finding("ERROR", name, "shared pstack reference mirror has drifted")
+            )
+
 
 def check_agent_rubrics(findings: list[Finding]) -> None:
     required = {
         "poteto-agent.md": ("Principles", "Lead ownership", "`verify`"),
         "comment-sicko.md": ("Keep exceptions", "MUST KILL", "Never write or edit application code"),
     }
-    agents = SKILLS / "pstack" / "references" / "agents"
-    for name, needles in required.items():
-        path = agents / name
-        if not path.is_file():
-            findings.append(Finding("ERROR", f"skills/pstack/references/agents/{name}", "missing"))
-            continue
-        body = path.read_text(encoding="utf-8")
-        if len(body.strip().splitlines()) < 20:
-            findings.append(
-                Finding(
-                    "ERROR",
-                    f"skills/pstack/references/agents/{name}",
-                    "agent rubric body is too short",
-                )
-            )
-        for needle in needles:
-            if needle not in body:
-                findings.append(
-                    Finding(
-                        "ERROR",
-                        f"skills/pstack/references/agents/{name}",
-                        f"missing required rubric content {needle!r}",
+    for root_name in ("pstack", "poteto-mode"):
+        agents = SKILLS / root_name / "references" / "agents"
+        for name, needles in required.items():
+            path = agents / name
+            rel = f"skills/{root_name}/references/agents/{name}"
+            if not path.is_file():
+                findings.append(Finding("ERROR", rel, "missing"))
+                continue
+            body = path.read_text(encoding="utf-8")
+            if len(body.strip().splitlines()) < 20:
+                findings.append(Finding("ERROR", rel, "agent rubric body is too short"))
+            for needle in needles:
+                if needle not in body:
+                    findings.append(
+                        Finding("ERROR", rel, f"missing required rubric content {needle!r}")
                     )
-                )
 
 
 
@@ -425,17 +434,11 @@ def run(strict: bool, changed_from: str | None) -> list[Finding]:
         SKILLS / "pstack" / "references" / "adapters",
         findings,
     )
-
-    left = SKILLS / "poteto-mode" / "references" / "capability-contract.md"
-    right = SKILLS / "pstack" / "references" / "capability-contract.md"
-    if not left.is_file() or not right.is_file():
-        findings.append(
-            Finding("ERROR", "capability-contract.md", "shared reference mirror is missing")
-        )
-    elif left.read_bytes() != right.read_bytes():
-        findings.append(
-            Finding("ERROR", "capability-contract.md", "shared reference mirror has drifted")
-        )
+    compare_mirror(
+        SKILLS / "pstack" / "references" / "agents",
+        SKILLS / "poteto-mode" / "references" / "agents",
+        findings,
+    )
 
     check_fixtures(findings)
     check_shared_playbook_refs(findings)
