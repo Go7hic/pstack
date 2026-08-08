@@ -1,18 +1,30 @@
-# Set up pstack
+# Set up portable pstack
 
-In this page you install the plugin, pick which models pstack uses, and run your first task. Setup is one command plus a short conversation.
+This page installs the pack, selects role-appropriate models, and runs a small smoke test. The exact installation and delegation tools depend on the active coding agent.
 
-## Install the plugin
+## Install on your coding agent
 
-In a Cursor chat, run:
+### Cursor
+
+Use the official Cursor pstack plugin rather than this portable distribution:
 
 ```text
 /add-plugin pstack
 ```
 
-Cursor confirms the plugin is installed.
+The official plugin has native mode metadata and Cursor-specific integrations that the portable pack deliberately does not duplicate.
 
-## Pick your models
+### Claude Code, Codex, OpenCode, Droid, and other Agent Skills hosts
+
+Install the portable pack globally:
+
+```bash
+npx skills add https://skills.sh/p/3EVEFJjSrRBr1mI4 -g -s '*' -y
+```
+
+To install only for selected agents, add one or more `-a` flags as described in [INSTALL.md](../../INSTALL.md). Restart or reload the coding agent after installation so it rescans its skill directories.
+
+## Pick models by role
 
 Run:
 
@@ -20,30 +32,58 @@ Run:
 /setup-pstack
 ```
 
-[`/setup-pstack`](../../skills/setup-pstack/SKILL.md) detects the models you have access to, shows you each role (code delegates, judgment, the review panels), and asks what you want. Answer the questions. It writes `~/.cursor/rules/pstack-models.mdc`, a small rule every pstack skill reads.
+[`/setup-pstack`](../../skills/setup-pstack/SKILL.md) detects the models and helper controls exposed by the current host. It then maps available models to roles such as exploration, feature implementation, bug fixing, judgment, and adversarial review.
 
-You only override what you care about. A role with no line in the rule keeps the skill's default. To restore a default later, delete that role's line, or just run `/setup-pstack` again.
+The override file belongs to the active agent, not to a universal Cursor path:
 
-You might be wondering what happens if you use Auto. Set a role to `inherit-parent` or `auto` and pstack omits the subagent `model` field, so the subagent inherits your parent chat model. Both values mean the same thing, and neither is a model slug. For a panel role the value is a list, and one subagent runs per entry, so the list length sets the panel size. Setup also configures `swarm workers`, the default model for every `/swarm` worker unless a race names a model for each arm.
+| Host | Typical override path |
+| --- | --- |
+| Cursor | `~/.cursor/rules/pstack-models.mdc` |
+| Codex | `~/.codex/rules/pstack-models.md` |
+| Claude Code or a generic Agent Skills host | `~/.agents/pstack-models.md` or a host-supported user rule |
 
-## Accept the verification offer, or don't
+A role with no override inherits the adapter's default behavior. A value of `inherit-parent` or `auto` tells the adapter to omit an explicit child-model selection and use the parent session model. Panel roles accept a list; the list length controls the number of reviewers or candidates when the host supports parallel helpers.
 
-At the end of setup, `/setup-pstack` looks for a way to prove app behavior in your project, either a `verify-*` skill or an existing harness. If it finds neither, it offers once to generate one with [`/create-verification-skill`](../../skills/create-verification-skill/SKILL.md).
+Never copy model identifiers from another coding agent. `/setup-pstack` writes only model identifiers confirmed by the current host.
 
-Say yes and it writes `.cursor/skills/verify-<app>/`, a project-local skill that teaches agents to drive your app the way a user does. It proves the skill works once before handing it over. Say no and setup moves on. You can run `/create-verification-skill` yourself any time. [Verify and ship](./06-verify-and-ship.md#create-a-project-verification-skill) covers when it earns its place.
+## Decide whether to create project verification
 
-After setup, start a new chat. The model rule applies to new sessions.
+At the end of setup, pstack checks whether the project has a repeatable way to exercise the real product surface. That may be a project-local `verify-*` skill, a browser or simulator harness, a CLI check, or another host-specific runtime driver.
 
-## Run your first task
+When no useful harness exists, setup can route to [`/create-verification-skill`](../../skills/create-verification-skill/SKILL.md). The generated skill belongs in the active host's project-local skill directory. Do not assume `.cursor/skills/` outside Cursor.
 
-Pick something real but small, and describe it the way you'd describe it to a colleague:
+A verification skill should prove one real workflow before it is accepted. Compilation and unit tests are valuable, but they do not replace checking the behavior on the surface where the original problem appears.
+
+## Run the smoke test
+
+Choose a real but small task:
 
 ```text
-/poteto-mode add a --json flag to this command. text output stays byte-identical. verify both.
+/pstack add a --json flag to this command. Keep text output byte-identical and verify both paths.
 ```
 
-Watch the todo list. The first item is always "read the Principles section". The rest are the matched playbook's steps copied in, the Feature playbook for this prompt. If `/poteto-mode` skips a step, the step stays in the list with `skip: <reason>`, so you can see what it chose not to do.
+You can also invoke `/poteto-mode`. The entry skill should:
 
-From here you can type normal follow-ups. `/poteto-mode` is sticky. It stays on for the conversation until you opt out by saying so.
+1. read the capability contract and the adapter for the current host;
+2. create a todo list from the matching playbook;
+3. use real parallel helpers when the host exposes them;
+4. fall back explicitly to the lead agent when helper spawning is unavailable;
+5. verify the result before declaring completion.
+
+For a read-only smoke test, try:
+
+```text
+/how explain how configuration reaches the command handler.
+```
+
+On a broad subsystem, confirm the adapter fans out several read-only explorers. On a narrow function, a single local pass is expected.
+
+## Understand mode lifetime
+
+Cursor's official plugin can provide native sticky-mode behavior. Other coding agents vary:
+
+- When the host preserves skill state, `/poteto-mode` can remain active across turns in the current conversation.
+- When the host does not provide persistent mode state, invoke `/pstack` or `/poteto-mode` again after a new session, context reset, or compaction.
+- The playbooks and engineering principles remain the same; only the lifecycle mechanism changes.
 
 Next: [Route work through `/poteto-mode`](./02-poteto-mode.md).

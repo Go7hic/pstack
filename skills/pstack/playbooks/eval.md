@@ -1,27 +1,43 @@
 ### Eval
 
-**You own the experiment design. Plan, blind, run, synthesize.**
+**You own the experiment design. Plan, blind, run, and synthesize.** Use an eval to measure how a skill, prompt, rubric, or structural change affects agent behavior before promoting it.
 
-Evals test how a change affects agent behavior before promoting it: a new skill variant, a structural change, a prompt tweak. The failure mode is the observer effect. An agent that knows it's being evaluated behaves differently, so candidates must run blind.
+The main failure mode is the observer effect. A candidate that knows the behavior being measured will perform for the test, so candidate tasks must look like organic user work.
 
-**Non-negotiables for blinding:**
+## Blinding rules
 
-- No `eval`, `test`, `judge`, `experiment`, `rubric`, `score`, `compare`, `benchmark`, `candidate`, or `arena` in any directory, file, or prompt the candidate sees.
-- The candidate prompt looks like an organic user request. State the goal, not the meta. "build me a small todo cli" not "show me how you follow the principles chain".
-- No chain-eliciting cues. Don't ask the candidate to list which skills, principles, or files they applied; that meta-prompt inflates citation behavior. Ask for design notes generally and grade chain-following from code shape, not self-report.
-- Sanitize directory and slug names. Use project-shaped names a user might pick, not labels like `candidate-1` or `agent-a`.
-- Don't tell the candidate other candidates exist.
-- The judge can know it's judging but sees outputs by sanitized label only, never by model name.
-- Comparing two variants: one judge scores both sets in a single pass on one scale, blind to which set each came from. Two judge runs with different prompts don't compare, the calibration drifts.
+- Do not expose words such as `eval`, `test`, `judge`, `experiment`, `rubric`, `score`, `compare`, `benchmark`, `candidate`, or `arena` in paths, prompts, or files visible to candidates.
+- Write one realistic user request that states the goal, constraints, and success condition without naming the hidden behavior being measured.
+- Do not ask candidates to list which skills or principles they used. Grade actual actions and artifacts rather than self-report.
+- Use ordinary project-shaped directory and branch names.
+- Do not tell one candidate that other candidates exist.
+- The judge sees sanitized labels, never model names or variant identities.
+- When comparing variants, one judge scores all outputs in one pass on one rubric. Separate judge runs create calibration drift.
 
-**Steps:**
+## Steps
 
-1. **Frame.** State what variant is under test and what behavior counts as success. Write the rubric (3-6 concrete criteria) for the judge only. Hold it back from candidates.
-2. **Set up sanitized environments.** Per-candidate working dir with the variant in place. Plant any context an organic task would have: a project skeleton, the skills the candidate would naturally read.
-3. **Author one organic prompt.** What a user would type. No leakage of what's being measured.
-4. **Spawn N parallel candidates** on different models per the **arena** skill's Phase B. Each works in its own sanitized dir; same prompt to each.
-5. **Spawn one blinded judge** on a different model family per the **arena** skill's Phase C. Judge sees outputs by sanitized label and the rubric, never a model name.
-6. **Verify the chain from transcripts, not self-report.** Read each candidate's local transcript under the active workspace's `agent-transcripts/` directory (the system prompt names this path). Do not glob across `~/.cursor/projects/*/`; that crosses workspace boundaries and reads private chats from unrelated projects. Look at which files each candidate actually opened. Citing a principle is not reading its leaf skill, and reading it is not applying it. Grade chain-following from the files it really read plus the shape of the code, never from the candidate's own claims.
-7. **Read every candidate output yourself** end to end. Compare to the judge's verdict. Disagreement means a model is biased or the rubric is ambiguous. Synthesize.
+1. **Frame the hypothesis.** State the variant or behavior under study, the baseline, and the expected observable difference. Write three to six concrete scoring criteria for the judge only.
+2. **Create isolated environments.** Each candidate receives its own worktree or directory, the same project starting state, and only the skill or prompt variant assigned to that arm. Keep write scopes and runtime resources isolated.
+3. **Author one organic prompt.** Use the exact same prompt and success conditions for every arm. Remove meta-language that reveals what is being measured.
+4. **Run candidates through Arena.** Use `parallel` and isolated helpers as Arena's fan-out phase specifies. Resolve candidate models through the active adapter. Keep variant labels and model identities hidden from the judge.
+5. **Run one blinded judge.** Use `review` with `model_role:judgment` or `model_role:critic`, preferably from a different model family than the candidate majority. Give the judge sanitized outputs and the held-back rubric.
+6. **Verify behavior from available evidence, not self-report.** Prefer a first-class session trace, tool-call record, generated artifact, git history, or runtime evidence exposed by the active host. When no transcript or trace is available, grade only claims observable in the artifact and record the evidence gap. Never scan broad user-history directories to locate hidden conversations.
+7. **Read every output yourself.** The lead reviews candidates end to end, compares the result with the judge, investigates disagreement, and checks that blinding was not broken.
+8. **Decide.** Promote, reject, or rerun with a corrected rubric or stronger sensitivity. Do not average wildly divergent outputs into a conclusion; divergence often means the prompt, fixture, or measurement is under-specified.
 
-**Reply:** variant under test, rubric, per-candidate notes, judge's verdict, your synthesis, and a recommendation for whether to promote the variant.
+## Evidence package
+
+For each arm, retain:
+
+- sanitized label;
+- prompt and starting fixture revision;
+- assigned variant revision;
+- artifact or diff;
+- verification result;
+- available action trace or transcript reference;
+- judge score per criterion;
+- lead notes and final verdict.
+
+Do not retain secrets or unrelated conversation history in the eval package.
+
+**Reply:** hypothesis, hidden rubric, fixture and blinding controls, per-arm evidence, judge verdict, lead synthesis, confidence limits, and promote/reject/rerun recommendation.

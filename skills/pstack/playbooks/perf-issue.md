@@ -1,24 +1,30 @@
 ### Perf issue
 
-**You own the measurement story. Plan, review, verify the numbers.** Tie every fix to a measurement, don't read source instead of measuring.
+**You own the measurement story. Plan, review, and verify the numbers.** Tie every fix to a measurement; do not substitute source inspection for measurement.
 
-1. Capture a baseline trace via the matching control skill.
-2. `how` to ground hypotheses; don't claim a perf ceiling without running it first.
-   Most fixes come from eight strategy families. Use them as hypothesis generators, not a checklist. A family earns an attempt only when the trace shows the signal it names, and a focused fix for the dominant cost beats applying all eight.
-   - **Elimination.** The cheapest work is work that doesn't run. Before optimizing the hot path, ask whether it needs to exist: a computation nobody consumes, a feature gate that's always off for this user, a sync that redundantly mirrors state, a legacy path kept "just in case". The trace shows what's slow, never that it's deletable, so this family needs the `how` pass, not the profiler. Deleting the work beats every other family when it applies.
-   - **Divide and conquer.** The dominant cost scales with input size. Split the work so each piece touches less (chunk, shard, prune the search space) or so independent pieces run in parallel.
-   - **Caching.** The same computation or fetch repeats on identical inputs. Store and reuse the result; name what invalidates it before claiming the win.
-   - **Indirection.** The hot path does expensive work a cheaper intermediate could absorb: an index instead of a scan, a queue that shifts work off the interactive thread, a handle that lets a cheaper implementation swap in. Add the hop only when it removes more from the critical path than it adds; a layer that sits on the hot path without removing work is pure cost.
-   - **Batching.** Many small operations each pay a fixed overhead (RPC, query, syscall, draw call). Coalesce them to pay the overhead once per batch.
-   - **Redundancy.** The wait hangs on one slow instance or attempt. Duplicate the work (replicas, hedged requests, speculative execution) and take the fastest result. This trades extra load for lower tail latency, so the trace has to show the wait dominates and the system has headroom; duplication without that tradeoff only adds load.
-   - **Lazy evaluation.** Cost lands on results that are never used or not needed yet (eager init on the boot path, rendering offscreen items). Defer the work until first use.
-   - **Scheduling.** The work must happen, but not during the interactive moment. Move it to where nobody is waiting: idle callbacks, a background warmup after boot, precompute before the user arrives, cleanup after the frame commits. Distinct from Lazy (later-when-needed): Scheduling often runs the work *earlier* than the hot moment, or in its shadow. The win is perceived latency, so measure the interactive path, not total work done.
-3. Plan the fix from the trace. If it crosses a function boundary, `architect` first. Delegate implementation to a subagent using your configured perf-issue model (default `model_role:bug_impl` / judgment (Cursor example: gpt-5.6-sol-max)); review the diff. Capture a post-fix trace.
-   Apply the **sequence-verifiable-units** principle skill, verifying each attempt before trying the next.
-4. Parse and compare the artifacts (JSON to sqlite, diff). "Inconclusive" or wrong-surface is not a pass; flag it.
-5. Cite the measurement in the PR.
-6. Run **Opening a PR**.
+1. Capture a baseline trace or metric with `verify` on the matching real surface. Record the workload, environment, command, artifact path, sampling method, and noise range so the post-fix result is comparable.
+2. Run **how** to ground hypotheses. Do not claim a performance ceiling without measuring it.
 
-For sustained improvement against a metric rather than a one-off fix, use the Hillclimb playbook (`playbooks/hillclimb.md`).
+   Most fixes come from eight strategy families. Use them as hypothesis generators, not a checklist. A family earns an attempt only when evidence shows the signal it names.
 
-**Reply:** baseline number, post-fix number, delta, artifact path.
+   - **Elimination.** The cheapest work is work that does not run. Before optimizing a hot path, ask whether the work is consumed, enabled, or still required. A trace shows what is expensive; the How pass determines whether it is deletable.
+   - **Divide and conquer.** The dominant cost scales with input size. Split, shard, chunk, or prune the search space; run independent pieces in parallel only when shared state has been removed.
+   - **Caching.** Identical inputs repeat an expensive computation or fetch. Name cache keys, invalidation, memory cost, and staleness before accepting the change.
+   - **Indirection.** A cheaper intermediate removes expensive work from the critical path: an index instead of a scan, a queue instead of synchronous execution, or a handle that permits a cheaper implementation. An extra layer that does not remove work is pure cost.
+   - **Batching.** Many small operations each pay a fixed RPC, query, syscall, serialization, or draw-call overhead. Coalesce them and measure both latency and resource usage.
+   - **Redundancy.** Tail latency is dominated by one slow instance or attempt. Hedging or replication can trade extra load for lower latency only when the system has headroom and cancellation is correct.
+   - **Lazy evaluation.** Work is performed for results that are never used or not needed yet. Defer it until the first real demand.
+   - **Scheduling.** Necessary work occurs while a user or critical task is waiting. Move it before the hot moment, after it, or into an idle window, then measure the interactive path rather than only total work.
+
+3. Plan the smallest evidence-backed fix. If it crosses a meaningful interface boundary, run **architect** first. Use `implement` with `model_role:bug_impl` and a bounded write scope; the lead reviews the diff. Capture a post-fix artifact using the same frozen workload and measurement method.
+
+   Apply the **sequence-verifiable-units** principle. Verify or revert each attempt before introducing another variable.
+
+4. Parse and compare the artifacts. Use structured conversion or a small analysis script when needed. Report baseline, post-fix value, absolute and percentage delta, sample count, and whether the movement clears noise. “Inconclusive” or a different surface is not a pass.
+5. Run the regression gate and verify the user-visible path. A faster trace that changes behavior is a rejected attempt.
+6. Cite the measurement command and artifacts in the pull request.
+7. Run the **Opening a PR** playbook.
+
+For sustained, iterative work against a target metric rather than a one-off diagnosis and fix, use the Hillclimb playbook.
+
+**Reply:** workload and environment, baseline, post-fix result, delta, confidence/noise note, verification result, and artifact paths.

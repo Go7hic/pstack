@@ -1,0 +1,37 @@
+name: Portable audit
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Compile maintenance scripts
+        run: python3 -m compileall -q scripts
+
+      - name: Check pack structure and mirrors
+        run: python3 scripts/audit_portability.py
+
+      - name: Reject new portability regressions
+        if: github.event_name == 'pull_request'
+        run: >-
+          python3 scripts/audit_portability.py
+          --strict
+          --changed-from "${{ github.event.pull_request.base.sha }}"

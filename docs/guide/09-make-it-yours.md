@@ -1,6 +1,6 @@
 # Make it yours
 
-poteto-mode is one person's style. The machinery underneath, playbooks, routing, model roles, works just as well wearing yours. This page covers generating a personal mode, capturing lessons from a session, authoring a focused skill, and testing a skill change before you trust it.
+`poteto-mode` captures one person's engineering style. The machinery underneath—principles, playbooks, capability routing, model roles, verification, and review—can support a smaller mode built around your own recurring conventions.
 
 ## Generate your own mode with `/automate-me`
 
@@ -8,60 +8,83 @@ poteto-mode is one person's style. The machinery underneath, playbooks, routing,
 /automate-me
 ```
 
-You don't describe your style, because [`/automate-me`](../../skills/automate-me/SKILL.md) reads it out of your history. It mines your recent transcripts in the active workspace for repeated preferences, in how you like replies, delegation, verification, code, prose, and process, then asks you which patterns are really you. It drafts `.cursor/skills/<your-name>-mode/SKILL.md` through Cursor's built-in `create-skill` flow, runs the draft through [`/unslop`](../../skills/unslop/SKILL.md), and opens a PR from a worktree so you review it like any other change.
+[`/automate-me`](../../skills/automate-me/SKILL.md) gathers authorized evidence from the current host, looks for repeated preferences in response style, autonomy, delegation, verification, code, prose, and delivery process, then asks which patterns are genuinely durable.
 
-Run it again whenever your habits drift:
+It uses the active coding agent's skill-authoring workflow, not a hard-coded vendor path. The resulting `<handle>-mode` skill goes into the project-local or user-level skill directory supported by the current host. When the host can enforce explicit-only invocation or persistent modes, the generated skill uses those controls; otherwise it documents the lifecycle fallback honestly.
+
+Run it again when habits change:
 
 ```text
-/automate-me update my mode skill with everything since its last edit
+/automate-me update my mode skill with evidence since its last meaningful edit
 ```
 
-Update mode mines only the history since the skill last changed. It keeps rules you haven't contradicted, revises the ones with new evidence, and adds sections only for genuinely new patterns.
+Update mode preserves rules that have not been contradicted, revises stale rules, removes disproven ones, and adds sections only for genuinely new clusters.
 
 ## Capture a session's lessons with `/reflect`
 
-Right after a task that taught you something, run:
+After a task exposes a reusable success or failure pattern, run:
 
 ```text
-/reflect that took way too long. capture what we learned so the next run doesn't repeat it.
+/reflect that took too long. capture what should change so the next run does not repeat it.
 ```
 
-[`/reflect`](../../skills/reflect/SKILL.md) sends the transcript to three parallel reviewers, then a synthesizer sorts the proposals into `Accepted`, `Rejected`, and `Backlog` and waits for your approval before any skill changes. Approve a proposal only if it would change a future decision. One weird session is an anecdote, not a rule.
+[`/reflect`](../../skills/reflect/SKILL.md) builds an authorized session evidence package and sends it through three independent lenses: judgment, tooling, and divergent review. A synthesizer groups proposals into `Accepted`, `Rejected`, and `Backlog`. It waits for your approval before editing durable skills.
+
+Approve a lesson only when it would change a future decision. One unusual session is evidence to inspect, not automatically a global rule. Prefer a script, CI check, adapter contract, or evaluation when structure can enforce the lesson better than prose.
 
 ## Author a focused skill
 
-When you already know the workflow you want to capture:
+When the workflow is already clear:
 
 ```text
-/poteto-mode write a skill for verifying database migrations in this repo
+/poteto-mode write a skill for verifying database migrations in this repository
 ```
 
-Writing a skill matches the [Authoring or modifying a skill playbook](../../skills/poteto-mode/playbooks/authoring-a-skill.md), which routes through Cursor's built-in `create-skill`, validates the frontmatter and links, and ships the result through the Opening a PR playbook. Agent-facing prose has a higher bar than human prose, because an unhelpful sentence becomes an instruction some future agent follows. Let the playbook hold that bar rather than writing a `SKILL.md` freehand.
+The [Authoring a skill playbook](../../skills/poteto-mode/playbooks/authoring-a-skill.md) routes through the active host's skill-authoring and validation workflow, checks frontmatter and references, applies portable capability language, and ships the result through the [Opening a PR playbook](../../skills/poteto-mode/playbooks/opening-a-pr.md).
 
-One special case has its own generator. A skill that must drive your app and prove behavior is a verification skill, so use [`/create-verification-skill`](../../skills/create-verification-skill/SKILL.md) and [`/maintain-verification-skill`](../../skills/maintain-verification-skill/SKILL.md) instead. [Verify and ship](./06-verify-and-ship.md#create-a-project-verification-skill) covers both.
+Agent-facing prose has a high bar because an ambiguous sentence becomes an instruction future agents may follow. Let the authoring workflow test triggers, links, host compatibility, and fallback behavior instead of writing `SKILL.md` freehand.
 
-## Write docs to a standard with `/technical-writing`
+A workflow that drives the real app and proves behavior is a verification skill. Use [`/create-verification-skill`](../../skills/create-verification-skill/SKILL.md) and [`/maintain-verification-skill`](../../skills/maintain-verification-skill/SKILL.md). [Verify and ship](./06-verify-and-ship.md#create-a-project-verification-skill) explains when that investment earns its place.
 
-Skills aren't the only prose you ship. For docs, RFCs, readmes, PR descriptions, and commit messages:
+## Write documentation to a standard
+
+For documentation, RFCs, READMEs, pull-request descriptions, and commit messages:
 
 ```text
 /technical-writing review the readme changes
 ```
 
-[`/technical-writing`](../../skills/technical-writing/SKILL.md) applies a layered standard with one goal, prose a tired engineer understands on the first read. It picks the document's mode first (tutorial, how-to, reference, or explanation), then works sentence by sentence: who does what, one thought per sentence, nothing readable two ways. Use it to review what you or an agent just wrote, or name it up front when you ask for a doc.
+[`/technical-writing`](../../skills/technical-writing/SKILL.md) chooses the document mode—tutorial, how-to, reference, or explanation—then checks audience, sequence, terminology, ambiguity, and sentence-level clarity. Use it to review an existing draft or name it when requesting the document.
 
 ## Test a skill change blind
 
-A skill edit affects every future session, so test it like the experiment it is:
+A skill edit affects future sessions, so test it as an experiment:
 
 ```text
-/poteto-mode run the eval playbook on this skill change. same task for both variants, candidates stay blind.
+/poteto-mode run the Eval playbook on this skill change. Use the same organic task for both variants and keep the arms blind.
 ```
 
-The [Eval playbook](../../skills/poteto-mode/playbooks/eval.md) is built around one failure mode, the observer effect. An agent that knows it's being evaluated behaves differently. So candidate agents get an organic-looking task in sanitized directories, never the words "eval" or "candidate", and never each other's existence. One judge scores all outputs under neutral labels, and chain-following gets graded from which files each candidate actually read, not from what it claims.
+The [Eval playbook](../../skills/poteto-mode/playbooks/eval.md) controls for the observer effect. Candidate helpers receive an ordinary user-shaped task in isolated environments. They do not see experiment language, model identities, the hidden rubric, or other arms. One blinded judge scores all outputs on the same scale, and the lead verifies the behavior through artifacts, action traces, or authorized session evidence rather than candidate self-report.
 
-Read every output yourself before accepting the verdict. If you disagree with the judge, suspect the rubric before you suspect your judgment.
+Read every output before accepting the verdict. Disagreement with the judge may reveal bias, but it may also mean the rubric or fixture was under-specified.
 
-**Pitfall:** don't edit a skill mid-task because it's misbehaving. Fix it in its own PR and keep the task moving. A skill edit that ships tangled into feature work is invisible to review and impossible to evaluate.
+## Keep personal rules portable
+
+A useful personal mode distinguishes preferences from runtime mechanics:
+
+- “Use two independent reviewers for risky architecture” is portable.
+- “Call this exact vendor helper with this JSON” belongs in an adapter.
+- “Keep the mode active forever” is invalid unless the host can enforce that lifecycle.
+- “Never ask me questions” is unsafe; prefer “do not ask for observable facts or reversible engineering choices.”
+- “Always use the strongest model” ignores cost and task shape; prefer model roles.
+
+Run the repository portability audit when editing this pack:
+
+```bash
+python3 scripts/audit_portability.py
+python3 scripts/audit_portability.py --strict --changed-from origin/main
+```
+
+**Pitfall:** do not hide a substantive skill change inside unrelated feature work. Fix the skill in its own focused pull request so it can be reviewed, evaluated, and reverted independently.
 
 Next: [Recipes and pitfalls](./10-recipes-and-pitfalls.md).

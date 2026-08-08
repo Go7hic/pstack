@@ -1,11 +1,22 @@
 ### Opening a PR
 
-Invoked at the end of every other playbook.
+Run this at the end of an implementation playbook when the user asked for a reviewable pull request or the repository workflow clearly requires one.
 
-**Worktree.** Work from a git worktree off main; subagents inherit it. Multiple `adapter` delegation calls on the same branch each get their own worktree, or `git fetch && git reset --hard origin/<branch>` between them. Dirty branch with unrelated work: patch out, fresh worktree, apply. Snarled worktree: reset from main, redo minimally.
+1. **Protect unrelated work.** Use a clean branch or worktree based on the intended base. Do not overwrite dirty changes that belong to another task. When several helpers contribute, keep their write scopes or worktrees separate and integrate deliberately on the owning branch.
+2. **Verify the final head.** Run focused tests, the broader regression gate, and the matching real-surface verification. Re-run checks after the final rebase or conflict resolution so evidence refers to the head that will be reviewed.
+3. **Review the diff.** Run **interrogate** when risk or ambiguity warrants it. Apply **no-comments** to comment quality and **unslop** to prose. Perform a simplicity pass before commit; do not depend on an optional cleanup tool being installed.
+4. **Shape the commits.** Use small, ordered commits that tell the implementation story. Amend when a correction belongs to the commit just created; add a new commit when the change is independently reviewable. Do not hide unrelated work in the branch.
+5. **Refresh the base safely.** Rebase or merge according to the repository's documented policy. Never rewrite shared history or a published stack without the required owner checkpoint.
+6. **Open the pull request through the active forge interface.** Use the connected repository tool, hosting API, or available CLI. Include:
+   - user-visible outcome;
+   - design choice and trade-off;
+   - verification commands and results;
+   - runtime evidence or known verification gap;
+   - migration, rollout, or compatibility notes;
+   - follow-up work explicitly out of scope.
+7. **Confirm the created artifact.** Read back the pull request metadata and exact head SHA before reporting it. Do not fabricate or infer a URL.
+8. **Route follow-up correctly.** Return the pull-request reference to the lead agent. Start the pstack **Babysit** playbook only when the user asks to monitor, get it green, address threads, or make it merge-ready. Opening a pull request alone does not authorize merging or long-running monitoring.
 
-**Commits.** Commit liberally; rebase into small, ordered commits before opening PRs. Each commit is a future PR: landable, ordered to tell the story. Amend when the fix belongs in a just-made commit; new commit when separable.
+For stacked work, use the team's existing stack workflow. Keep slices small, ordered, and visible to reviewers; do not require one specific stacking product.
 
-**PRs.** `/deslop` the diff before commit; `/no-comments` the diff before review; apply the **unslop** skill to the PR description and commit bodies. Small PRs, 5 narrow over 1 fat; stack follow-ups, branch off main only for genuinely independent work. For stacked PRs, use whatever stacking tool your team uses; the principle is small, ordered slices with the stack visible to reviewers. `gh pr view <number>` before referencing PR status. Rebase on `main` before substantial stack work. No `## Summary` / `## Test plan` boilerplate on small PRs; commit bodies don't restate the subject. After opening, run Cursor's built-in **babysit** skill; push back when feedback drifts from intent.
-
-A subagent that opens a PR runs `interrogate`, `/deslop`, and `/no-comments`, returns the URL, and does NOT babysit. Return to the parent.
+**Reply:** pull-request reference, base and exact head, commit sequence, verification performed, known gaps, and whether Babysit was requested.
