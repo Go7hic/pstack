@@ -9,10 +9,10 @@ It preserves the same engineering system—principles, playbooks, `how`, `why`, 
 Use this portable pack on Agent Skills-compatible coding agents other than Cursor. Cursor users should keep the official pstack plugin.
 
 ```bash
-npx skills add https://skills.sh/p/3EVEFJjSrRBr1mI4 -g -s '*' -y
+npx skills add Go7hic/pstack -g -s '*' -y
 ```
 
-See [INSTALL.md](./INSTALL.md) for per-agent selection, model override paths, migration notes, and smoke tests. After global installation, skills usually land under an agent-specific directory such as `~/.claude/skills/`, `~/.codex/skills/`, or the shared `~/.agents/skills/` tree.
+See [INSTALL.md](./INSTALL.md) for per-agent selection, optional skills.sh install, model override paths, migration notes, and smoke tests. After global installation, skills usually land under an agent-specific directory such as `~/.claude/skills/`, `~/.codex/skills/`, or the shared `~/.agents/skills/` tree.
 
 ## What is included
 

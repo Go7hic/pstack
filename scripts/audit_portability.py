@@ -13,6 +13,7 @@ from typing import Iterable
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILLS = ROOT / "skills"
+FIXTURES = ROOT / "scripts" / "fixtures" / "portability"
 
 PLAYBOOKS = {
     "investigation.md",
@@ -71,9 +72,27 @@ PORTABILITY_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("Cursor-only background flag", re.compile(r"\brun_in_background\s*:")),
     ("runtime-specific readonly flag", re.compile(r"\breadonly\s*:")),
     ("Cursor AskQuestion API", re.compile(r"\bAskQuestion\b")),
-    ("Cursor project-history path", re.compile(r"~/\.cursor/projects/")),
+    (
+        "Cursor filesystem path assumption",
+        re.compile(r"~/\.cursor/(?:projects|skills|plugins)/"),
+    ),
     ("Cursor built-in workflow", re.compile(r"Cursor(?:'s)? built-in", re.I)),
     ("cursor-team-kit dependency", re.compile(r"cursor-team-kit", re.I)),
+    (
+        "Cursor control-surface dependency",
+        re.compile(r"\bcontrol-(?:cli|ui)\b", re.I),
+    ),
+    (
+        "Cursor transcript directory assumption",
+        re.compile(r"\bagent-transcripts\b"),
+    ),
+    (
+        "Cursor cloud/dashboard workflow",
+        re.compile(
+            r"\bCursor cloud(?: agent)?\b|\bCursor dashboard\b|\bCursor restart\b",
+            re.I,
+        ),
+    ),
     (
         "ambiguous generated helper wording",
         re.compile(r"adapter\s+`?explore`?\s*/\s*`?implement`?\s+helpers?", re.I),
@@ -216,6 +235,68 @@ def check_skills(findings: list[Finding]) -> None:
             findings.append(Finding("WARN", rel, "missing the standard portability block"))
 
 
+def match_labels(text: str) -> set[str]:
+    labels: set[str] = set()
+    for label, pattern in PORTABILITY_PATTERNS:
+        if pattern.search(text):
+            labels.add(label)
+    return labels
+
+
+def check_fixtures(findings: list[Finding]) -> None:
+    bad_dir = FIXTURES / "bad"
+    good_dir = FIXTURES / "good"
+    if not bad_dir.is_dir() or not good_dir.is_dir():
+        findings.append(
+            Finding("ERROR", relative(FIXTURES), "bad/ and good/ fixture directories required")
+        )
+        return
+
+    bad_files = sorted(path for path in bad_dir.glob("*.md") if path.is_file())
+    if not bad_files:
+        findings.append(Finding("ERROR", relative(bad_dir), "expected at least one bad fixture"))
+
+    covered_labels: set[str] = set()
+    for path in bad_files:
+        labels = match_labels(read_text(path))
+        if not labels:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    relative(path),
+                    "bad fixture matched no portability pattern",
+                )
+            )
+            continue
+        covered_labels.update(labels)
+
+    expected_labels = {label for label, _ in PORTABILITY_PATTERNS}
+    for label in sorted(expected_labels - covered_labels):
+        findings.append(
+            Finding(
+                "ERROR",
+                relative(bad_dir),
+                f"no bad fixture covers pattern {label!r}",
+            )
+        )
+
+    good_files = sorted(path for path in good_dir.glob("*.md") if path.is_file())
+    if not good_files:
+        findings.append(
+            Finding("ERROR", relative(good_dir), "expected at least one good fixture")
+        )
+    for path in good_files:
+        labels = match_labels(read_text(path))
+        if labels:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    relative(path),
+                    "good fixture matched: " + ", ".join(sorted(labels)),
+                )
+            )
+
+
 def changed_paths(base_ref: str) -> set[str]:
     completed = subprocess.run(
         ["git", "diff", "--name-only", f"{base_ref}...HEAD"],
@@ -290,6 +371,8 @@ def run(strict: bool, changed_from: str | None) -> list[Finding]:
         findings.append(
             Finding("ERROR", "capability-contract.md", "shared reference mirror has drifted")
         )
+
+    check_fixtures(findings)
 
     selected = changed_paths(changed_from) if changed_from else None
     scan_portability(findings, selected=selected, strict=strict)

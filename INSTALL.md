@@ -2,16 +2,16 @@
 
 Use this portable pack on every Agent Skills–compatible coding agent **except** Cursor (keep Cursor’s official pstack plugin there).
 
-## Recommended: skills.sh global install
+## Recommended: GitHub global install
 
 ```bash
-npx skills add https://skills.sh/p/3EVEFJjSrRBr1mI4 -g -s '*' -y
+npx skills add Go7hic/pstack -g -s '*' -y
 ```
 
 Add `-a` for specific agents if you do not want every discovered agent:
 
 ```bash
-npx skills add https://skills.sh/p/3EVEFJjSrRBr1mI4 -g \
+npx skills add Go7hic/pstack -g \
   -a claude-code -a codex -a opencode -a factory-droid \
   -s '*' -y
 ```
@@ -28,12 +28,21 @@ npx skills add https://skills.sh/p/3EVEFJjSrRBr1mI4 -g \
 
 After install, restart or reload the agent so it rescans skills.
 
+## Optional: skills.sh pack URL
+
+If you already have a published skills.sh pack for this repo, you can install from that URL instead. Prefer the GitHub install above when the pack page is stale or the URL does not resolve to a valid skill archive.
+
+```bash
+# Replace with your current pack URL only after confirming it installs cleanly.
+npx skills add https://skills.sh/p/<pack-id> -g -s '*' -y
+```
+
 ## Optional: wire more agents from the install tree
 
 If the CLI already installed into one global tree and you need another agent that was not selected, symlink from that install location (not from this git checkout):
 
 ```bash
-# After skills.sh -g, the shared tree is usually:
+# After a global install, the shared tree is usually:
 SRC=~/.agents/skills
 # If your install only landed under one agent, point SRC there instead, e.g.:
 # SRC=~/.claude/skills
@@ -55,7 +64,7 @@ Do **not** use `~/workspace/pstack/skills` as `SRC` unless you are developing th
 
 ### Codex cutover checklist
 
-1. Prefer `npx skills add … -g -a codex` (or symlink from `SRC` above).
+1. Prefer `npx skills add Go7hic/pstack -g -a codex` (or symlink from `SRC` above).
 2. Delete the old pack if present: `rm -rf ~/.codex/skills/codex-pstack`
 3. Point model overrides at `~/.codex/rules/pstack-models.md` (see `adapters/codex-models.md`).
 4. Smoke-test: `/pstack` or `/how` and confirm the agent reads `adapters/codex.md` and spawns via `multi_agent_v1` (or current Codex multi-agent tools).
@@ -90,4 +99,4 @@ Local checkout only when editing the pack:
 SRC=~/workspace/pstack/skills   # or your clone path
 ```
 
-Day-to-day use should go through the skills.sh install path above.
+Day-to-day use should go through the GitHub install path above.

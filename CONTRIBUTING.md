@@ -52,9 +52,10 @@ The baseline audit checks:
 - the complete playbook and adapter inventories;
 - byte-identical playbook, adapter, and capability-contract mirrors;
 - Cursor-only frontmatter keys;
-- portability smells such as concrete Cursor model slugs, `subagent_type`, `AskQuestion`, Cursor transcript paths, and ambiguous mechanical-rewrite wording.
+- portability smells such as concrete Cursor model slugs, `subagent_type`, `AskQuestion`, Cursor filesystem assumptions, `control-cli` / `control-ui`, `agent-transcripts`, Cursor cloud/dashboard workflows, and ambiguous mechanical-rewrite wording;
+- regression fixtures under `scripts/fixtures/portability/` for every portability pattern.
 
-The non-strict repository-wide scan reports existing portability debt as warnings. The strict changed-file scan prevents a pull request from adding or preserving those patterns in files it touches.
+The non-strict repository-wide scan reports existing portability debt as warnings. Known remaining debt after the portable baseline includes long-running playbooks such as Orchestrate, Shipping, and Autopilot; treat new warnings as work for issue #2 rather than suppressing patterns. The strict changed-file scan prevents a pull request from adding or preserving those patterns in files it touches.
 
 ## Semantic review after mechanical porting
 
