@@ -49,11 +49,12 @@ The repository contains a structural and portability audit:
 ```bash
 python3 scripts/audit_portability.py
 python3 scripts/audit_portability.py --strict --changed-from origin/main
+python3 scripts/sync_mirrors.py
 ```
 
-GitHub Actions runs the structural audit on `main` and on pull requests. It also rejects new vendor leakage in changed files, including concrete Cursor model slugs, Cursor-only tool fields, transcript paths, and drift between mirrored playbooks or adapters.
+GitHub Actions runs the structural audit on `main` and on pull requests. It also rejects new vendor leakage in changed files, including concrete Cursor model slugs, Cursor-only tool fields, transcript paths, thin mechanical portability blocks, rewrite artifacts, and drift between mirrored playbooks or adapters.
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) before syncing a newer upstream revision. Mechanical regex porting is followed by a semantic review; capability verbs must describe the actual job rather than merely replacing vendor vocabulary.
+See [CONTRIBUTING.md](./CONTRIBUTING.md) and [UPSTREAM_MANIFEST.json](./UPSTREAM_MANIFEST.json) before syncing a newer upstream revision. Mechanical regex porting is followed by a semantic review; capability verbs must describe the actual job rather than merely replacing vendor vocabulary.
 
 ## Not bundled
 

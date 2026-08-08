@@ -101,6 +101,26 @@ PORTABILITY_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
         "ambiguous generated model role",
         re.compile(r"model_role:fast_explore\s*/\s*feature_impl", re.I),
     ),
+    (
+        "thin mechanical portability block",
+        re.compile(r"Translate upstream Cursor mechanics through the adapter"),
+    ),
+    (
+        "doubled loop rewrite artifact",
+        re.compile(r"long-runlong-run"),
+    ),
+    (
+        "doubled matching-surface rewrite artifact",
+        re.compile(r"matching surface on the matching"),
+    ),
+    (
+        "Cursor app support path",
+        re.compile(r"Application Support/Cursor"),
+    ),
+    (
+        "Cursor restart trigger wording",
+        re.compile(r"restart Cursor", re.I),
+    ),
 )
 
 SCAN_EXCLUDES = (

@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "upstream": {
+    "repository": "https://github.com/cursor/plugins",
+    "path": "pstack",
+    "commit": "UNPINNED",
+    "synced_at": null,
+    "notes": "Pin commit SHA on each upstream import. Do not auto-merge sync PRs."
+  },
+  "portable": {
+    "patch_version": "0.2.0",
+    "capability_contract_version": "1.0.0",
+    "hand_maintained_skills": [
+      "pstack",
+      "poteto-mode",
+      "how",
+      "why",
+      "architect",
+      "arena",
+      "swarm",
+      "interrogate",
+      "reflect",
+      "recall",
+      "automate-me",
+      "show-me-your-work",
+      "setup-pstack"
+    ]
+  }
+}

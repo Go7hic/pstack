@@ -14,11 +14,11 @@ Portable entry point for the pstack engineering system. It preserves the upstrea
 
 ## Portability (required)
 
-1. Read `references/capability-contract.md`.
+1. Read `references/capability-contract.md`, `references/host-lifecycle.md`, and `references/workflow-quality.md`.
 2. Detect the active coding agent and read one matching file under `references/adapters/`. Use `generic.md` when no named adapter fits.
 3. Express workflow steps through `explore`, `implement`, `review`, `parallel`, `ask_user`, `verify`, and `model_role` rather than vendor tool names.
 4. Prefer real parallel helpers when the host exposes them. Collapse to the lead agent only when spawning is missing, denied, or unsafe because write scopes overlap.
-5. Resolve concrete models through `/setup-pstack` and the active adapter. Never copy model identifiers from another host.
+5. Resolve concrete models through `/setup-pstack` and the active adapter. Never copy model identifiers from another host. Optional overrides should match `references/model-override.schema.json`.
 6. Keep synthesis, final diff judgment, and verification on the lead agent.
 
 ## First moves
