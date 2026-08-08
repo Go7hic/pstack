@@ -18,24 +18,17 @@
 
 Do not edit both sides of a mirror independently. The portable audit rejects drift.
 
-## Import and mirrors
+## Re-port helpers
+
+After pulling newer upstream Cursor pstack sources:
 
 ```bash
-# Preferred: import an upstream checkout, run both passes, refresh mirrors.
-python3 scripts/import_upstream.py --upstream-root /path/to/cursor/plugins/pstack \
-  --upstream-commit <sha>
-
-# Or refresh mirrors only after local playbook/adapter edits.
+python3 scripts/import_upstream.py --upstream-root /path/to/cursor/plugins/pstack
+# or refresh mirrors only:
 python3 scripts/sync_mirrors.py
-
-# Mechanical first pass only (targeted phrases; no bare-word Task replace).
-python3 scripts/port_to_portable.py --report /tmp/port-report.json
-python3 scripts/port_to_portable.py --check-idempotent
 ```
 
-Hand-maintained entry skills and adapters are listed in `UPSTREAM_MANIFEST.json`. Do not overwrite them from upstream.
-
-After import, complete `scripts/fixtures/semantic/REVIEW_CHECKLIST.md` before merging.
+`UPSTREAM_MANIFEST.json` is the source of truth for hand-maintained `SKILL.md` names. Import still syncs `poteto-mode` playbooks/references while protecting those SKILL files and local adapters/agents.
 
 ## Required audit
 
@@ -46,7 +39,9 @@ python3 -m compileall -q scripts
 python3 scripts/sync_mirrors.py
 python3 scripts/audit_portability.py
 python3 scripts/audit_portability.py --strict --changed-from origin/main
-python3 scripts/validate_model_override.py scripts/fixtures/model-override/valid.json
+python3 scripts/check_markdown_links.py
+python3 scripts/validate_model_override.py scripts/fixtures/model-override/valid.md
+python3 scripts/port_to_portable.py --check-idempotent
 ```
 
 The baseline audit checks:

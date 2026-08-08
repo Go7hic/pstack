@@ -4,6 +4,7 @@
   "title": "pstack model override",
   "type": "object",
   "additionalProperties": false,
+  "required": ["schema_version", "roles"],
   "properties": {
     "schema_version": {
       "type": "integer",
@@ -11,6 +12,7 @@
     },
     "roles": {
       "type": "object",
+      "minProperties": 1,
       "additionalProperties": false,
       "properties": {
         "fast_explore": { "$ref": "#/$defs/roleValue" },
@@ -22,18 +24,25 @@
     },
     "arena_runners": {
       "type": "array",
+      "minItems": 1,
       "items": { "$ref": "#/$defs/roleValue" }
     },
     "arena_cross_judge_pool": {
       "type": "array",
+      "minItems": 1,
       "items": { "$ref": "#/$defs/roleValue" }
     },
     "interrogate_reviewers": {
       "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/roleValue" }
+    },
+    "architect_runners": {
+      "type": "array",
+      "minItems": 1,
       "items": { "$ref": "#/$defs/roleValue" }
     }
   },
-  "required": ["schema_version"],
   "$defs": {
     "roleValue": {
       "type": "string",

@@ -5,7 +5,8 @@
     "path": "pstack",
     "commit": "UNPINNED",
     "synced_at": null,
-    "notes": "Pin commit SHA on each upstream import. Do not auto-merge sync PRs."
+    "last_import_report": null,
+    "notes": "Pin commit SHA on each upstream import via scripts/import_upstream.py. Hand-maintained SKILL.md names below are protected; poteto-mode playbooks/references still import. Do not auto-merge sync PRs."
   },
   "portable": {
     "patch_version": "0.2.0",

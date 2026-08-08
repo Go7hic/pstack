@@ -16,34 +16,45 @@ Legacy name from the old pack (still honored if present):
 ~/.codex/rules/codex-pstack-models.md
 ```
 
-`/setup-pstack` should write the new path. Shape:
+`/setup-pstack` writes the new path using the portable JSON fence from `../model-override.schema.json`:
 
-```text
-feature, refactoring: <slug>/<effort>
-bug-fix, perf-issue, hillclimb: <slug>/<effort>
-judgment and prose: <slug>/<effort>
-how explorer: <slug>/<effort>
-how explainer: <slug>/<effort>
-how critics: <slug>/<effort>, <slug>/<effort>, <slug>/<effort>
-arena runners: ...
-architect runners: ...
-interrogate reviewers: ...
-swarm workers: ...
+````markdown
+---
+description: pstack model overrides
+alwaysApply: true
+---
+
+```json
+{
+  "schema_version": 1,
+  "roles": {
+    "fast_explore": "<slug>",
+    "feature_impl": "<slug>",
+    "bug_impl": "<slug>",
+    "judgment": "<slug>",
+    "critic": "<slug>"
+  },
+  "arena_runners": ["<slug>", "<slug>"],
+  "arena_cross_judge_pool": ["<slug>"],
+  "interrogate_reviewers": ["<slug>", "<slug>", "<slug>"],
+  "architect_runners": ["<slug>", "<slug>"]
+}
 ```
+````
 
-Use `inherit-parent` or `auto` to omit `model` on that role.
+Use `inherit-parent` or `auto` to omit `model` on that role. Optional effort can be encoded in the slug string only when Codex requires a combined token; otherwise keep effort in adapter-specific notes beside the override.
 
 ## Role → intent
 
-| Role / label | Intent |
+| Role | Intent |
 | --- | --- |
-| feature, refactoring | everyday implementation |
-| bug-fix, perf-issue, hillclimb | high-stakes reasoning after evidence |
-| judgment and prose | synthesis, architecture, unslop-sensitive replies |
-| how explorer / swarm workers | fast read-only or mechanical fan-out |
-| how explainer / why synthesizer | final explanation quality |
-| *critics / runners / reviewers panels | diverse families when available |
+| `feature_impl` | everyday implementation / refactoring |
+| `bug_impl` | high-stakes reasoning after evidence |
+| `judgment` | synthesis, architecture, unslop-sensitive replies |
+| `fast_explore` | fast read-only or mechanical fan-out |
+| `critic` | adversarial / panel diversity |
+| panel arrays | one helper per entry; prefer diverse families |
 
 ## Effort
 
-When the API separates reasoning effort from the model slug, set it from the override (`high`, `max`, `ultra`, …). Do not invent effort values the tool rejects.
+When the API separates reasoning effort from the model slug, set it from host-supported fields. Do not invent effort values the tool rejects.

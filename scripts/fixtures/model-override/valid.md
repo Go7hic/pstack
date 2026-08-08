@@ -1,3 +1,9 @@
+---
+description: pstack model overrides
+alwaysApply: true
+---
+
+```json
 {
   "schema_version": 1,
   "roles": {
@@ -9,6 +15,7 @@
   },
   "arena_runners": ["inherit-parent", "inherit-parent"],
   "arena_cross_judge_pool": ["inherit-parent"],
-  "interrogate_reviewers": ["inherit-parent", "inherit-parent"],
+  "interrogate_reviewers": ["inherit-parent", "inherit-parent", "inherit-parent"],
   "architect_runners": ["inherit-parent", "inherit-parent"]
 }
+```

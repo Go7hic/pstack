@@ -11,11 +11,12 @@ compatibility: Works with Agent Skills-compatible coding agents. Multi-agent opt
 
 This skill is part of the portable **pstack** pack.
 
-1. Read the `pstack` capability contract and the adapter for the active coding agent before delegation.
+1. Read the `pstack` capability contract (`skills/pstack/references/capability-contract.md` or this skill's mirrored copy), `host-lifecycle.md`, `workflow-quality.md`, and the adapter for the active coding agent before delegation.
 2. Express work through `explore`, `implement`, `review`, `parallel`, `ask_user`, `verify`, and `model_role`. The adapter maps those verbs to real host tools.
-3. Resolve models by role. Never require a concrete model identifier copied from another host.
+3. Resolve models by role through the override format in `model-override.schema.json`. Never require a concrete model identifier copied from another host.
 4. Prefer real parallel helpers when the host exposes them. Collapse to the lead agent only when spawning is missing, denied, or unsafe because write scopes overlap.
 5. Treat mode persistence as a host capability. Keep this mode active for the current conversation when possible; after a fresh session or context reset, invoke it again unless the host provides a persistent mode mechanism.
+6. Apply workflow-quality defaults: lean simple on small tasks, treat originating specs as a review axis, pause on irreversible external side effects, and respect concurrency budgets.
 
 ## Non-negotiables
 

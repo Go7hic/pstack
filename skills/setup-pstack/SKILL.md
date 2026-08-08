@@ -9,16 +9,17 @@ compatibility: Works with Agent Skills-compatible coding agents. Multi-agent opt
 
 ## Portability (required)
 
-1. Read the sibling `pstack` skill `references/capability-contract.md` and the active adapter.
+1. Read the sibling `pstack` skill `references/capability-contract.md`, `references/model-override.schema.json`, and the active adapter.
 2. Write the override beside the active agent — do not assume one vendor path:
    - Cursor: `~/.cursor/rules/pstack-models.mdc` (or project `.cursor/rules/`)
    - Codex: `~/.codex/rules/pstack-models.md`
    - Claude Code / generic: project or user rules file named in the adapter, or `~/.agents/pstack-models.md`
 3. Never invent model slugs. Only write slugs confirmed available in this session.
+4. After writing, validate with `python3 scripts/validate_model_override.py <path>` when that script is available in the checkout; otherwise self-check against the schema fields below.
 
 ## Goal
 
-Write a **pstack model override file** that maps roles to models. Skills read it and fall back to `model_role` defaults when a line is absent.
+Write a **pstack model override file** that maps `model_role` values to host models. Skills read the JSON fence and fall back to parent-session defaults when a role is absent or set to `inherit-parent` / `auto`.
 
 ## Steps
 
@@ -28,40 +29,49 @@ Enumerate model slugs you can pass to adapter helpers in this session. If you ca
 
 ### 2. Load current state
 
-If a pstack model override file already exists for this runtime, read it. Otherwise start from the role table below.
+If a pstack model override file already exists for this runtime, read its JSON fence. Otherwise start from the role table below.
 
 ### 3. Map and confirm
 
-Show every role with its current model. Mark unavailable slugs. Ask via `ask_user` whether to accept or change. For panel roles the value is a list (one helper per entry). `arena cross-judge pool` is a list from which Arena picks one. Prefer diverse families for panels when available.
+Show every role with its current model. Mark unavailable slugs. Ask via `ask_user` whether to accept or change. Panel arrays use one helper per entry. Prefer diverse families for panels when available.
 
 ### 4. Validate
 
-Every real slug must be in the detected set. `inherit-parent` / `auto` always pass.
+Every real slug must be in the detected set. `inherit-parent` / `auto` always pass. Reject an empty `roles` object.
 
 ### 5. Write the override
 
-Overwrite the whole file so re-runs stay idempotent. Example shape (values are placeholders — replace with confirmed slugs):
+Overwrite the whole file so re-runs stay idempotent. Use this exact shape (replace placeholders with confirmed slugs):
 
-```text
-# pstack model configuration. One line per role.
-# inherit-parent / auto => omit model on that role (use parent chat model).
-feature, refactoring: <feature_impl>
-bug-fix, perf-issue, hillclimb: <bug_impl>
-judgment and prose: <judgment>
-hardest tasks: <judgment>
-how explorer: <fast_explore>
-how explainer: <judgment>
-how critics: <critic>, <critic>, <critic>
-why investigators: <fast_explore>
-why synthesizer: <judgment>
-reflect tooling: <feature_impl>
-reflect judgment, divergent, synthesizer: <judgment>
-arena runners: <critic>, <critic>, <critic>
-arena cross-judge pool: <judgment>, <critic>, <critic>
-swarm workers: <fast_explore>
-architect runners: <judgment>, <critic>, <critic>
-interrogate reviewers: <judgment>, <critic>, <critic>
+````markdown
+---
+description: pstack model overrides
+alwaysApply: true
+---
+
+```json
+{
+  "schema_version": 1,
+  "roles": {
+    "fast_explore": "<fast_explore>",
+    "feature_impl": "<feature_impl>",
+    "bug_impl": "<bug_impl>",
+    "judgment": "<judgment>",
+    "critic": "<critic>"
+  },
+  "arena_runners": ["<critic>", "<critic>", "<judgment>"],
+  "arena_cross_judge_pool": ["<judgment>", "<critic>"],
+  "interrogate_reviewers": ["<judgment>", "<bug_impl>", "<fast_explore>", "<critic>"],
+  "architect_runners": ["<judgment>", "<critic>", "<critic>"]
+}
 ```
+````
+
+Notes:
+
+- `inherit-parent` or `auto` means omit an explicit child model for that role.
+- Panel arrays may be shortened when the host concurrency budget is lower.
+- Do not write the old label-line format (`feature, refactoring: ...`).
 
 ### 6. Confirm
 

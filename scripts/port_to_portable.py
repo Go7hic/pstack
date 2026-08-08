@@ -11,14 +11,17 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Iterable
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILLS = ROOT / "skills"
+MANIFEST = ROOT / "UPSTREAM_MANIFEST.json"
 
 PORTABILITY_BLOCK = """
 ## Portability (required)
@@ -40,22 +43,15 @@ CURSOR_ONLY_FRONTMATTER = {
     "is_background",
 }
 
-# Hand-maintained portable sources. Never overwrite these from upstream import.
-HAND_MAINTAINED_SKILLS = {
-    "pstack",
-    "poteto-mode",
-    "how",
-    "why",
-    "architect",
-    "arena",
-    "swarm",
-    "interrogate",
-    "reflect",
-    "recall",
-    "automate-me",
-    "show-me-your-work",
-    "setup-pstack",
-}
+
+def load_hand_maintained_skills() -> set[str]:
+    if MANIFEST.is_file():
+        data = json.loads(MANIFEST.read_text(encoding="utf-8"))
+        return set(data["portable"]["hand_maintained_skills"])
+    return set()
+
+
+HAND_MAINTAINED_SKILLS = load_hand_maintained_skills()
 
 HAND_MAINTAINED_PATH_PREFIXES = (
     "skills/pstack/references/adapters/",
@@ -65,6 +61,7 @@ HAND_MAINTAINED_PATH_PREFIXES = (
     "skills/pstack/references/agents/",
     "skills/pstack/references/model-override.schema.json",
     "skills/pstack/references/host-lifecycle.md",
+    "skills/pstack/references/workflow-quality.md",
 )
 
 # Targeted phrase transforms only. Order: longer / more specific first.
@@ -292,7 +289,7 @@ def parse_args(argv: Iterable[str]) -> argparse.Namespace:
     parser.add_argument(
         "--check-idempotent",
         action="store_true",
-        help="fail if a second dry-run pass would still change files",
+        help="copy skills to a temp tree, apply once, and fail if a second pass still changes files (never writes the real workspace)",
     )
     parser.add_argument(
         "--report",
@@ -307,15 +304,31 @@ def parse_args(argv: Iterable[str]) -> argparse.Namespace:
     return parser.parse_args(list(argv))
 
 
+def check_idempotent_in_temp() -> tuple[list[str], list[Transform], list[str]]:
+    """Apply porting in a temporary skills tree. Real workspace stays untouched."""
+    global SKILLS, ROOT
+    original_skills = SKILLS
+    original_root = ROOT
+    with tempfile.TemporaryDirectory(prefix="pstack-port-idempotent-") as tmp:
+        tmp_root = Path(tmp)
+        tmp_skills = tmp_root / "skills"
+        shutil.copytree(original_skills, tmp_skills)
+        SKILLS = tmp_skills
+        ROOT = tmp_root
+        try:
+            first, first_report = run_port(write=True)
+            second, _second_report = run_port(write=False)
+        finally:
+            SKILLS = original_skills
+            ROOT = original_root
+        return first, first_report, second
+
+
 def main(argv: Iterable[str] = sys.argv[1:]) -> int:
     args = parse_args(argv)
-    write = not args.dry_run and not args.check_idempotent
-    changed, report = run_port(write=write)
 
     if args.check_idempotent:
-        # First apply for real, then dry-run must be empty.
-        changed, report = run_port(write=True)
-        second, second_report = run_port(write=False)
+        first, report, second = check_idempotent_in_temp()
         if second:
             print("ERROR: import pipeline is not idempotent", file=sys.stderr)
             for path in second:
@@ -324,8 +337,9 @@ def main(argv: Iterable[str] = sys.argv[1:]) -> int:
                 args.report.write_text(
                     json.dumps(
                         {
-                            "changed": second,
-                            "transforms": [asdict(item) for item in second_report],
+                            "first_pass_changed": first,
+                            "second_pass_changed": second,
+                            "transforms": [asdict(item) for item in report],
                         },
                         indent=2,
                     )
@@ -333,7 +347,26 @@ def main(argv: Iterable[str] = sys.argv[1:]) -> int:
                     encoding="utf-8",
                 )
             return 1
-        print("idempotent: second pass would change 0 files")
+        print(
+            f"idempotent: temp apply changed {len(first)} file(s); second pass would change 0"
+        )
+        if args.report:
+            args.report.write_text(
+                json.dumps(
+                    {
+                        "first_pass_changed": first,
+                        "second_pass_changed": [],
+                        "transforms": [asdict(item) for item in report],
+                    },
+                    indent=2,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+        return 0
+
+    write = not args.dry_run
+    changed, report = run_port(write=write)
 
     payload = {
         "changed": changed,

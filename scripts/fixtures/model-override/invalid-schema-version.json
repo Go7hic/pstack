@@ -1,0 +1,6 @@
+{
+  "schema_version": 2,
+  "roles": {
+    "fast_explore": "inherit-parent"
+  }
+}

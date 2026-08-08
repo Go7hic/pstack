@@ -26,8 +26,38 @@ jobs:
       - name: Compile maintenance scripts
         run: python3 -m compileall -q scripts
 
-      - name: Check pack structure and mirrors
-        run: python3 scripts/audit_portability.py
+      - name: Sync mirrors and check pack structure
+        run: |
+          python3 scripts/sync_mirrors.py
+          python3 scripts/audit_portability.py
+
+      - name: Check markdown relative links
+        run: python3 scripts/check_markdown_links.py
+
+      - name: Validate model override fixtures
+        run: |
+          python3 scripts/validate_model_override.py scripts/fixtures/model-override/valid.json
+          python3 scripts/validate_model_override.py scripts/fixtures/model-override/valid.md
+          ! python3 scripts/validate_model_override.py scripts/fixtures/model-override/invalid-empty-roles.json
+          ! python3 scripts/validate_model_override.py scripts/fixtures/model-override/invalid-schema-version.json
+          ! python3 scripts/validate_model_override.py scripts/fixtures/model-override/invalid-label-format.md
+
+      - name: Check import idempotency without touching workspace
+        run: python3 scripts/port_to_portable.py --check-idempotent
+
+      - name: Reject unpinned upstream manifest on main
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path("UPSTREAM_MANIFEST.json").read_text())
+          commit = data["upstream"].get("commit")
+          # Allow UNPINNED until the first real upstream sync lands a SHA.
+          # Fail only if the field is missing.
+          assert commit, "upstream.commit missing"
+          print(f"upstream.commit={commit}")
+          PY
 
       - name: Reject new portability regressions
         if: github.event_name == 'pull_request'

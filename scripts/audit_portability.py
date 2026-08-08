@@ -126,7 +126,6 @@ PORTABILITY_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
 SCAN_EXCLUDES = (
     "skills/pstack/references/adapters/",
     "skills/poteto-mode/references/adapters/",
-    "skills/pstack/references/agents/",
 )
 
 
@@ -317,6 +316,52 @@ def check_fixtures(findings: list[Finding]) -> None:
             )
 
 
+def check_shared_playbook_refs(findings: list[Finding]) -> None:
+    for name in ("plan.md", "bugbot-triage.md"):
+        left = SKILLS / "poteto-mode" / "references" / name
+        right = SKILLS / "pstack" / "references" / name
+        if not left.is_file() or not right.is_file():
+            findings.append(
+                Finding("ERROR", name, "shared playbook reference mirror is missing")
+            )
+        elif left.read_bytes() != right.read_bytes():
+            findings.append(
+                Finding("ERROR", name, "shared playbook reference mirror has drifted")
+            )
+
+
+def check_agent_rubrics(findings: list[Finding]) -> None:
+    required = {
+        "poteto-agent.md": ("Principles", "Lead ownership", "`verify`"),
+        "comment-sicko.md": ("Keep exceptions", "MUST KILL", "Never write or edit application code"),
+    }
+    agents = SKILLS / "pstack" / "references" / "agents"
+    for name, needles in required.items():
+        path = agents / name
+        if not path.is_file():
+            findings.append(Finding("ERROR", f"skills/pstack/references/agents/{name}", "missing"))
+            continue
+        body = path.read_text(encoding="utf-8")
+        if len(body.strip().splitlines()) < 20:
+            findings.append(
+                Finding(
+                    "ERROR",
+                    f"skills/pstack/references/agents/{name}",
+                    "agent rubric body is too short",
+                )
+            )
+        for needle in needles:
+            if needle not in body:
+                findings.append(
+                    Finding(
+                        "ERROR",
+                        f"skills/pstack/references/agents/{name}",
+                        f"missing required rubric content {needle!r}",
+                    )
+                )
+
+
+
 def changed_paths(base_ref: str) -> set[str]:
     completed = subprocess.run(
         ["git", "diff", "--name-only", f"{base_ref}...HEAD"],
@@ -393,6 +438,8 @@ def run(strict: bool, changed_from: str | None) -> list[Finding]:
         )
 
     check_fixtures(findings)
+    check_shared_playbook_refs(findings)
+    check_agent_rubrics(findings)
 
     selected = changed_paths(changed_from) if changed_from else None
     scan_portability(findings, selected=selected, strict=strict)
