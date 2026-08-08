@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Go7hic/pstack/skills/pstack/references/model-override.schema.json",
+  "title": "pstack model override",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "roles": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "fast_explore": { "$ref": "#/$defs/roleValue" },
+        "feature_impl": { "$ref": "#/$defs/roleValue" },
+        "bug_impl": { "$ref": "#/$defs/roleValue" },
+        "judgment": { "$ref": "#/$defs/roleValue" },
+        "critic": { "$ref": "#/$defs/roleValue" }
+      }
+    },
+    "arena_runners": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/roleValue" }
+    },
+    "arena_cross_judge_pool": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/roleValue" }
+    },
+    "interrogate_reviewers": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/roleValue" }
+    }
+  },
+  "required": ["schema_version"],
+  "$defs": {
+    "roleValue": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Concrete host model id, or inherit-parent / auto to omit an explicit model."
+    }
+  }
+}

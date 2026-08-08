@@ -1,10 +1,21 @@
 #!/usr/bin/env python3
-"""Port Cursor pstack markdown to runtime-agnostic Agent Skills."""
+"""Import upstream Cursor pstack markdown into portable Agent Skills form.
+
+This pass is intentionally conservative. It never performs a bare-word ``Task``
+replacement. Hand-maintained entry skills and adapters are skipped. Run
+``scripts/port_pass2.py`` afterward, then ``scripts/audit_portability.py``.
+"""
 
 from __future__ import annotations
 
+import argparse
+import json
 import re
+import subprocess
+import sys
+from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import Iterable
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILLS = ROOT / "skills"
@@ -12,17 +23,12 @@ SKILLS = ROOT / "skills"
 PORTABILITY_BLOCK = """
 ## Portability (required)
 
-This skill is part of the portable **pstack** pack for multiple coding agents.
+This skill is part of the portable **pstack** pack.
 
-1. Read `pstack` skill `references/capability-contract.md` (or this skill's `references/capability-contract.md` if present).
-2. Detect the runtime and read one adapter before any delegation:
-   - Cursor → `references/adapters/cursor.md` (under the `pstack` or `poteto-mode` skill)
-   - Codex → `references/adapters/codex.md`
-   - Anything else / unsure → `references/adapters/generic.md`
-3. Translate upstream Cursor mechanics through the adapter. Do **not** invent Cursor `Task` / `poteto-agent` / model slugs on runtimes that lack them.
-4. If multi-agent tools are unavailable, collapse parallel work onto the main agent and say so briefly.
-
-Capability verbs: `explore`, `implement`, `review`, `parallel`, `ask_user`, `verify`, `model_role`.
+1. Read the `pstack` capability contract and the adapter for the active coding agent before any helper delegation.
+2. Prefer capability verbs (`explore`, `implement`, `review`, `parallel`, `ask_user`, `verify`, `model_role`) over vendor tool names.
+3. Resolve models through `model_role`. Never require a vendor-specific model identifier.
+4. When helper spawning is unavailable, run the work on the lead agent and state that fan-out was collapsed.
 """.strip()
 
 CURSOR_ONLY_FRONTMATTER = {
@@ -34,121 +40,110 @@ CURSOR_ONLY_FRONTMATTER = {
     "is_background",
 }
 
-# Order matters: longer / more specific first.
-REPLACEMENTS: list[tuple[str, str]] = [
+# Hand-maintained portable sources. Never overwrite these from upstream import.
+HAND_MAINTAINED_SKILLS = {
+    "pstack",
+    "poteto-mode",
+    "how",
+    "why",
+    "architect",
+    "arena",
+    "swarm",
+    "interrogate",
+    "reflect",
+    "recall",
+    "automate-me",
+    "show-me-your-work",
+    "setup-pstack",
+}
+
+HAND_MAINTAINED_PATH_PREFIXES = (
+    "skills/pstack/references/adapters/",
+    "skills/poteto-mode/references/adapters/",
+    "skills/pstack/references/capability-contract.md",
+    "skills/poteto-mode/references/capability-contract.md",
+    "skills/pstack/references/agents/",
+    "skills/pstack/references/model-override.schema.json",
+    "skills/pstack/references/host-lifecycle.md",
+)
+
+# Targeted phrase transforms only. Order: longer / more specific first.
+REPLACEMENTS: tuple[tuple[str, str, str], ...] = (
     (
+        "poteto-agent-subagent",
         r"`subagent_type:\s*\"?poteto-agent\"?`",
-        "`implement` / `explore` helper via the active adapter (poteto-style worker if available)",
+        "an `implement` helper using the Poteto worker rubric",
     ),
     (
-        r"subagent_type:\s*[\"']poteto-agent[\"']",
-        "adapter worker / explore helper (poteto-style if available)",
-    ),
-    (
+        "comment-sicko-subagent",
         r"`subagent_type:\s*\"?Comment Sicko\"?`",
-        "`review` helper with the Comment Sicko rubric (`pstack` → `references/agents/comment-sicko.md`)",
+        "a `review` helper using the Comment Sicko rubric",
     ),
     (
-        r"subagent_type:\s*[\"']Comment Sicko[\"']",
-        "Comment Sicko review helper via adapter",
+        "generalPurpose-subagent",
+        r"`?subagent_type`?\s*:\s*[\"']?generalPurpose[\"']?",
+        "a helper selected by the active adapter",
     ),
     (
-        r"`subagent_type`:\s*`generalPurpose`",
-        "adapter `explore` / `implement` helper",
+        "explore-subagent",
+        r"`?subagent_type`?\s*:\s*[\"']?explore[\"']?",
+        "an `explore` helper selected by the active adapter",
     ),
     (
-        r"subagent_type:\s*[\"']generalPurpose[\"']",
-        "adapter explore/implement helper",
+        "readonly-true",
+        r"`?readonly`?\s*:\s*`?true`?",
+        "read-only intent enforced by the adapter and prompt",
     ),
     (
-        r"subagent_type:\s*[\"']explore[\"']",
-        "adapter `explore` helper",
+        "run-in-background-true",
+        r"`?run_in_background`?\s*:\s*`?true`?",
+        "non-blocking delegation when the active adapter supports it",
     ),
+    ("ask-question", r"\bAskQuestion\b", "`ask_user`"),
     (
-        r"`readonly`:\s*`true`",
-        "read-only (`explore`)",
-    ),
-    (
-        r"readonly:\s*`?true`?",
-        "read-only (`explore`)",
-    ),
-    (
-        r"`run_in_background`:\s*`true`",
-        "non-blocking delegation when the adapter supports it",
-    ),
-    (
-        r"run_in_background:\s*`?true`?",
-        "non-blocking delegation when supported",
-    ),
-    (
-        r"\bAskQuestion\b",
-        "`ask_user`",
-    ),
-    (
+        "cursor-loop",
         r"Cursor's `/loop` command",
-        "the agent's long-running / loop mechanism if available, otherwise continue autonomously",
+        "the host's long-running or loop mechanism when available",
     ),
     (
+        "slash-loop",
+        r"`/loop`",
+        "the host's long-running or loop mechanism",
+    ),
+    (
+        "cursor-skill-authoring",
         r"Cursor's built-in for authoring SKILL\.md files",
-        "your agent's skill-authoring guidance",
+        "the active coding agent's skill-authoring workflow",
     ),
     (
+        "deslop-plugin",
         r"the `deslop` skill from the `cursor-team-kit` plugin \(`/deslop`\)",
-        "a local deslop / cleanup pass if available; otherwise apply `unslop` + simplicity review before commit",
+        "a local simplicity and cleanup pass, followed by `unslop` for prose",
     ),
     (
-        r"`cursor-team-kit` publishes `control-cli` \(for CLIs and TUIs\) and `control-ui` \(for browser / Electron / web UIs\)",
-        "use the best available control surface for CLI/TUI or browser/UI verification in this runtime",
+        "control-surface-pair",
+        r"`control-cli` or `control-ui`(?: from `cursor-team-kit`)?",
+        "the real CLI, browser, UI, or runtime surface available through `verify`",
     ),
-    (
-        r"Shipping UI / IDE / CLI → the matching control skill\. `cursor-team-kit` publishes `control-cli` \(for CLIs and TUIs\) and `control-ui` \(for browser, Electron, web UIs\)\. ",
-        "Shipping UI / IDE / CLI → verify on the real control surface available in this runtime. ",
-    ),
-    (
-        r"Spawn all explorers in a single message:",
-        "Spawn explorers via `parallel` + `explore` (one message if the adapter supports fan-out):",
-    ),
-    (
-        r"spawn a single Task subagent",
-        "spawn a single `explore`/`implement` helper via the adapter",
-    ),
-    (
-        r"Spawn a single Task subagent",
-        "Spawn a single `explore`/`implement` helper via the adapter",
-    ),
-    (
-        r"\bTask subagent\b",
-        "adapter helper",
-    ),
-    (
-        r"\bTask call\b",
-        "adapter delegation call",
-    ),
-    (
-        r"every `Task` call",
-        "every adapter delegation call",
-    ),
-    (
-        r"\bTask` call",
-        "adapter` delegation call",
-    ),
-    (
-        r"via `Task`",
-        "via the adapter",
-    ),
-    (
-        r"using `Task`",
-        "using the adapter",
-    ),
-    (
-        r"\bTask tool\b",
-        "delegation tool",
-    ),
-    (
-        r"(?<![A-Za-z])Task(?![A-Za-z])",
-        "adapter delegation",
-    ),
-]
+)
+
+
+@dataclass
+class Transform:
+    path: str
+    rule: str
+    count: int
+
+
+def relative(path: Path) -> str:
+    return path.relative_to(ROOT).as_posix()
+
+
+def is_hand_maintained(path: Path) -> bool:
+    rel = relative(path)
+    if path.name == "SKILL.md" and path.parent.name in HAND_MAINTAINED_SKILLS:
+        return True
+    return any(rel.startswith(prefix) or rel == prefix.rstrip("/") for prefix in HAND_MAINTAINED_PATH_PREFIXES)
 
 
 def split_frontmatter(text: str) -> tuple[str | None, str]:
@@ -171,8 +166,7 @@ def clean_frontmatter(fm: str, skill_dir_name: str) -> str:
             i += 1
             continue
         if line.startswith(" ") or line.startswith("\t"):
-            # continuation of previous kept key — only keep if last kept was not skipped
-            if out and not out[-1].startswith("#SKIP#"):
+            if out:
                 out.append(line)
             i += 1
             continue
@@ -183,16 +177,12 @@ def clean_frontmatter(fm: str, skill_dir_name: str) -> str:
                 i += 1
             continue
         if key == "name":
-            # Normalize name to directory name (agentskills: lowercase hyphen)
-            value = line.split(":", 1)[1].strip().strip("\"'")
-            # Keep directory name as canonical package name
             out.append(f"name: {skill_dir_name}")
             i += 1
             continue
         out.append(line)
         i += 1
 
-    # Ensure license/compatibility hints
     blob = "\n".join(out)
     if "license:" not in blob:
         out.append("license: MIT")
@@ -203,90 +193,169 @@ def clean_frontmatter(fm: str, skill_dir_name: str) -> str:
     return "\n".join(out).strip() + "\n"
 
 
-def apply_replacements(body: str) -> str:
-    for pattern, repl in REPLACEMENTS:
-        body = re.sub(pattern, repl, body)
+def apply_replacements(body: str, path: Path, report: list[Transform]) -> str:
+    for rule, pattern, repl in REPLACEMENTS:
+        new_body, count = re.subn(pattern, repl, body)
+        if count:
+            report.append(Transform(relative(path), rule, count))
+            body = new_body
     return body
 
 
 def ensure_portability(body: str) -> str:
     if "## Portability (required)" in body:
         return body
-    # Insert after first H1 if present, else at top
-    m = re.search(r"^# .+$", body, re.M)
-    if m:
-        insert_at = m.end()
+    match = re.search(r"^# .+$", body, re.M)
+    if match:
+        insert_at = match.end()
         return body[:insert_at] + "\n\n" + PORTABILITY_BLOCK + "\n" + body[insert_at:]
     return PORTABILITY_BLOCK + "\n\n" + body
 
 
-def port_skill_md(path: Path) -> bool:
+def port_skill_md(path: Path, report: list[Transform], write: bool) -> bool:
+    if is_hand_maintained(path):
+        return False
     original = path.read_text(encoding="utf-8")
     fm, body = split_frontmatter(original)
     skill_dir_name = path.parent.name
-
     if fm is None:
-        body = apply_replacements(original)
+        body = apply_replacements(original, path, report)
         body = ensure_portability(body)
         new = body
     else:
         new_fm = clean_frontmatter(fm, skill_dir_name)
-        body = apply_replacements(body)
+        body = apply_replacements(body, path, report)
         body = ensure_portability(body.lstrip("\n"))
         new = f"---\n{new_fm}---\n\n{body.lstrip()}"
-
-    if new != original:
-        path.write_text(new, encoding="utf-8")
-        return True
-    return False
-
-
-def port_plain_md(path: Path) -> bool:
-    original = path.read_text(encoding="utf-8")
-    # Skip our adapter/contract files from destructive Task word replaces if already portable
-    if path.name in {"capability-contract.md", "generic.md", "cursor.md", "codex.md"}:
+    if new == original:
         return False
-    if "Portability (required)" in original and path.name == "SKILL.md":
-        pass
-    new = apply_replacements(original)
-    if new != original:
+    if write:
         path.write_text(new, encoding="utf-8")
-        return True
-    return False
+    return True
 
 
-def main() -> None:
-    skill_changed = 0
-    md_changed = 0
-    for skill_md in sorted(SKILLS.glob("*/SKILL.md")):
-        if port_skill_md(skill_md):
-            skill_changed += 1
-            print(f"ported skill: {skill_md.parent.name}")
-    for md in sorted(SKILLS.rglob("*.md")):
-        if md.name == "SKILL.md":
-            continue
-        if port_plain_md(md):
-            md_changed += 1
-            print(f"ported md: {md.relative_to(ROOT)}")
-    # Agent reference prompts
-    agents = ROOT / "skills" / "pstack" / "references" / "agents"
-    if agents.exists():
-        for md in agents.glob("*.md"):
-            if port_plain_md(md) or True:
-                text = md.read_text(encoding="utf-8")
-                fm, body = split_frontmatter(text)
-                if fm is not None:
-                    new_fm = clean_frontmatter(fm, md.stem)
-                    body = apply_replacements(body)
-                    body = (
-                        body
-                        if "## Portability" in body
-                        else ensure_portability(body.lstrip("\n"))
+def port_plain_md(path: Path, report: list[Transform], write: bool) -> bool:
+    if is_hand_maintained(path):
+        return False
+    if path.name in {"capability-contract.md", "host-lifecycle.md"}:
+        return False
+    if "references/adapters/" in relative(path):
+        return False
+    original = path.read_text(encoding="utf-8")
+    new = apply_replacements(original, path, report)
+    if new == original:
+        return False
+    if write:
+        path.write_text(new, encoding="utf-8")
+    return True
+
+
+def collect_targets() -> list[Path]:
+    skills = sorted(SKILLS.glob("*/SKILL.md"))
+    others = sorted(
+        path
+        for path in SKILLS.rglob("*.md")
+        if path.name != "SKILL.md" and path.is_file()
+    )
+    return skills + others
+
+
+def run_port(write: bool) -> tuple[list[str], list[Transform]]:
+    changed: list[str] = []
+    report: list[Transform] = []
+    for path in collect_targets():
+        if path.name == "SKILL.md":
+            did = port_skill_md(path, report, write=write)
+        else:
+            did = port_plain_md(path, report, write=write)
+        if did:
+            changed.append(relative(path))
+    return changed, report
+
+
+def run_audit() -> int:
+    completed = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "audit_portability.py"), "--strict"],
+        cwd=ROOT,
+        check=False,
+    )
+    return completed.returncode
+
+
+def parse_args(argv: Iterable[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="report transforms without writing files",
+    )
+    parser.add_argument(
+        "--check-idempotent",
+        action="store_true",
+        help="fail if a second dry-run pass would still change files",
+    )
+    parser.add_argument(
+        "--report",
+        type=Path,
+        help="write a machine-readable JSON transform report",
+    )
+    parser.add_argument(
+        "--skip-audit",
+        action="store_true",
+        help="do not run the strict portability audit after writing",
+    )
+    return parser.parse_args(list(argv))
+
+
+def main(argv: Iterable[str] = sys.argv[1:]) -> int:
+    args = parse_args(argv)
+    write = not args.dry_run and not args.check_idempotent
+    changed, report = run_port(write=write)
+
+    if args.check_idempotent:
+        # First apply for real, then dry-run must be empty.
+        changed, report = run_port(write=True)
+        second, second_report = run_port(write=False)
+        if second:
+            print("ERROR: import pipeline is not idempotent", file=sys.stderr)
+            for path in second:
+                print(f"  would change again: {path}", file=sys.stderr)
+            if args.report:
+                args.report.write_text(
+                    json.dumps(
+                        {
+                            "changed": second,
+                            "transforms": [asdict(item) for item in second_report],
+                        },
+                        indent=2,
                     )
-                    md.write_text(f"---\n{new_fm}---\n\n{body.lstrip()}", encoding="utf-8")
-                    print(f"ported agent ref: {md.name}")
-    print(f"done. skills={skill_changed} other_md={md_changed}")
+                    + "\n",
+                    encoding="utf-8",
+                )
+            return 1
+        print("idempotent: second pass would change 0 files")
+
+    payload = {
+        "changed": changed,
+        "transforms": [asdict(item) for item in report],
+    }
+    if args.report:
+        args.report.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+    print(f"port_to_portable: {len(changed)} file(s) changed, {len(report)} transform(s)")
+    for path in changed:
+        print(f"  {path}")
+
+    if write and not args.skip_audit:
+        pass2 = ROOT / "scripts" / "port_pass2.py"
+        if pass2.is_file():
+            subprocess.run([sys.executable, str(pass2)], cwd=ROOT, check=False)
+        code = run_audit()
+        if code != 0:
+            print("ERROR: strict audit failed after import", file=sys.stderr)
+            return code
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

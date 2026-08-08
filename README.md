@@ -9,10 +9,10 @@ It preserves the same engineering system—principles, playbooks, `how`, `why`, 
 Use this portable pack on Agent Skills-compatible coding agents other than Cursor. Cursor users should keep the official pstack plugin.
 
 ```bash
-npx skills add https://skills.sh/p/3EVEFJjSrRBr1mI4 -g -s '*' -y
+npx skills add Go7hic/pstack -g -s '*' -y
 ```
 
-See [INSTALL.md](./INSTALL.md) for per-agent selection, model override paths, migration notes, and smoke tests. After global installation, skills usually land under an agent-specific directory such as `~/.claude/skills/`, `~/.codex/skills/`, or the shared `~/.agents/skills/` tree.
+See [INSTALL.md](./INSTALL.md) for per-agent selection, optional skills.sh install, model override paths, migration notes, and smoke tests. After global installation, skills usually land under an agent-specific directory such as `~/.claude/skills/`, `~/.codex/skills/`, or the shared `~/.agents/skills/` tree.
 
 ## What is included
 
@@ -49,11 +49,12 @@ The repository contains a structural and portability audit:
 ```bash
 python3 scripts/audit_portability.py
 python3 scripts/audit_portability.py --strict --changed-from origin/main
+python3 scripts/sync_mirrors.py
 ```
 
-GitHub Actions runs the structural audit on `main` and on pull requests. It also rejects new vendor leakage in changed files, including concrete Cursor model slugs, Cursor-only tool fields, transcript paths, and drift between mirrored playbooks or adapters.
+GitHub Actions runs the structural audit on `main` and on pull requests. It also rejects new vendor leakage in changed files, including concrete Cursor model slugs, Cursor-only tool fields, transcript paths, thin mechanical portability blocks, rewrite artifacts, and drift between mirrored playbooks or adapters.
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) before syncing a newer upstream revision. Mechanical regex porting is followed by a semantic review; capability verbs must describe the actual job rather than merely replacing vendor vocabulary.
+See [CONTRIBUTING.md](./CONTRIBUTING.md) and [UPSTREAM_MANIFEST.json](./UPSTREAM_MANIFEST.json) before syncing a newer upstream revision. Mechanical regex porting is followed by a semantic review; capability verbs must describe the actual job rather than merely replacing vendor vocabulary.
 
 ## Not bundled
 

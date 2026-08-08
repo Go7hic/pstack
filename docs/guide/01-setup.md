@@ -19,7 +19,7 @@ The official plugin has native mode metadata and Cursor-specific integrations th
 Install the portable pack globally:
 
 ```bash
-npx skills add https://skills.sh/p/3EVEFJjSrRBr1mI4 -g -s '*' -y
+npx skills add Go7hic/pstack -g -s '*' -y
 ```
 
 To install only for selected agents, add one or more `-a` flags as described in [INSTALL.md](../../INSTALL.md). Restart or reload the coding agent after installation so it rescans its skill directories.
@@ -80,10 +80,10 @@ On a broad subsystem, confirm the adapter fans out several read-only explorers. 
 
 ## Understand mode lifetime
 
-Cursor's official plugin can provide native sticky-mode behavior. Other coding agents vary:
+See `skills/pstack/references/host-lifecycle.md` for the host-by-host matrix.
 
 - When the host preserves skill state, `/poteto-mode` can remain active across turns in the current conversation.
 - When the host does not provide persistent mode state, invoke `/pstack` or `/poteto-mode` again after a new session, context reset, or compaction.
-- The playbooks and engineering principles remain the same; only the lifecycle mechanism changes.
+- Never claim sticky mode on a host that cannot enforce it.
 
 Next: [Route work through `/poteto-mode`](./02-poteto-mode.md).

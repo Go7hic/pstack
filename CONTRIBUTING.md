@@ -10,31 +10,32 @@
 ## Layout and sources of truth
 
 - Installable skills live under `skills/<name>/SKILL.md` and follow the Agent Skills layout used by skills.sh.
-- Shared runtime contracts live under `skills/pstack/references/{capability-contract.md,adapters/,agents/}`.
-- `skills/poteto-mode/playbooks/` is the canonical playbook directory. Mirror it to `skills/pstack/playbooks/` after edits.
-- `skills/pstack/references/adapters/` is the canonical adapter directory. Mirror it to `skills/poteto-mode/references/adapters/` after edits.
-- `skills/pstack/references/capability-contract.md` is canonical. Keep the copy under `skills/poteto-mode/references/` byte-identical.
-- Agent rubrics and `principles-summary.md` exist only under `skills/pstack/references/`; they are not mirrored into `poteto-mode`.
+- Shared runtime contracts live under `skills/pstack/references/{capability-contract.md,adapters/,agents/,host-lifecycle.md,model-override.schema.json}`.
+- `skills/poteto-mode/playbooks/` is the canonical playbook directory.
+- `skills/pstack/references/adapters/` is the canonical adapter directory.
+- `skills/pstack/references/capability-contract.md` is canonical.
+- Agent rubrics, `principles-summary.md`, `host-lifecycle.md`, and the model-override schema exist only under `skills/pstack/references/`.
 
 Do not edit both sides of a mirror independently. The portable audit rejects drift.
 
-## Re-port helpers
-
-After pulling newer upstream Cursor pstack sources:
+## Import and mirrors
 
 ```bash
-# Copy upstream skills, then run the mechanical passes.
-python3 scripts/port_to_portable.py
-python3 scripts/port_pass2.py
+# Preferred: import an upstream checkout, run both passes, refresh mirrors.
+python3 scripts/import_upstream.py --upstream-root /path/to/cursor/plugins/pstack \
+  --upstream-commit <sha>
 
-# Refresh mirrors from their canonical directories.
-rsync -a --delete skills/poteto-mode/playbooks/ skills/pstack/playbooks/
-rsync -a --delete skills/pstack/references/adapters/ skills/poteto-mode/references/adapters/
-cp skills/pstack/references/capability-contract.md \
-  skills/poteto-mode/references/capability-contract.md
+# Or refresh mirrors only after local playbook/adapter edits.
+python3 scripts/sync_mirrors.py
+
+# Mechanical first pass only (targeted phrases; no bare-word Task replace).
+python3 scripts/port_to_portable.py --report /tmp/port-report.json
+python3 scripts/port_to_portable.py --check-idempotent
 ```
 
-Adapters, `setup-pstack`, and portable entry skills are hand-maintained. Do not blindly overwrite them from upstream.
+Hand-maintained entry skills and adapters are listed in `UPSTREAM_MANIFEST.json`. Do not overwrite them from upstream.
+
+After import, complete `scripts/fixtures/semantic/REVIEW_CHECKLIST.md` before merging.
 
 ## Required audit
 
@@ -42,8 +43,10 @@ Run this before every pull request:
 
 ```bash
 python3 -m compileall -q scripts
+python3 scripts/sync_mirrors.py
 python3 scripts/audit_portability.py
 python3 scripts/audit_portability.py --strict --changed-from origin/main
+python3 scripts/validate_model_override.py scripts/fixtures/model-override/valid.json
 ```
 
 The baseline audit checks:
@@ -52,9 +55,10 @@ The baseline audit checks:
 - the complete playbook and adapter inventories;
 - byte-identical playbook, adapter, and capability-contract mirrors;
 - Cursor-only frontmatter keys;
-- portability smells such as concrete Cursor model slugs, `subagent_type`, `AskQuestion`, Cursor transcript paths, and ambiguous mechanical-rewrite wording.
+- portability smells (vendor fields, Cursor paths/control surfaces, thin mechanical blocks, rewrite artifacts);
+- regression fixtures under `scripts/fixtures/portability/` for every portability pattern.
 
-The non-strict repository-wide scan reports existing portability debt as warnings. The strict changed-file scan prevents a pull request from adding or preserving those patterns in files it touches.
+Repository-wide non-strict audit should stay at `0 error(s), 0 warning(s)` unless a finding is intentionally introduced and tracked. The strict changed-file scan rejects regressions in files a PR touches.
 
 ## Semantic review after mechanical porting
 
@@ -68,6 +72,10 @@ Regex passes are only the first step. Review every changed skill for meaning:
 6. Remove claims that a mode, transcript path, MCP discovery mechanism, or background task API exists on every host.
 
 A mechanically valid sentence can still be semantically wrong. Phrases such as “`explore` / `implement` helper” are a sign that the port has not chosen the actual capability.
+
+## Host conformance
+
+Live host results belong in `scripts/fixtures/conformance/HOST_MATRIX.md`. CI does not run remote agents; fill the matrix after smoke tests on each supported host.
 
 ## skills.sh
 

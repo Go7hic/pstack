@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "roles": {
+    "fast_explore": "inherit-parent",
+    "feature_impl": "auto",
+    "bug_impl": "inherit-parent",
+    "judgment": "inherit-parent",
+    "critic": "inherit-parent"
+  }
+}

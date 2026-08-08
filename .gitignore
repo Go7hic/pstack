@@ -8,3 +8,6 @@ node_modules/
 *~
 
 .migration-backup/
+
+__pycache__/
+*.pyc
