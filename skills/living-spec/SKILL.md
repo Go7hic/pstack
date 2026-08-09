@@ -1,13 +1,13 @@
 ---
 name: living-spec
-description: "Maintain a lightweight, current product-truth layer for pstack projects. Use for /living-spec inspect, draft, or converge; when a feature changes durable user-visible or business behavior; when work spans sessions or pull requests; or when current product docs, change briefs, or ADRs must stay aligned with verified implementation."
+description: "Maintain a lightweight, current product-truth layer for ystack projects. Use for /living-spec inspect, draft, or converge; when a feature changes durable user-visible or business behavior; when work spans sessions or pull requests; or when current product docs, change briefs, or ADRs must stay aligned with verified implementation."
 license: MIT
-compatibility: Works with Agent Skills-compatible coding agents. Multi-agent optional; see pstack adapters.
+compatibility: Works with Agent Skills-compatible coding agents. Multi-agent optional; see ystack adapters.
 ---
 
 # Living spec
 
-Keep the repository's current product behavior understandable without requiring a full specification framework for every task.
+Living spec is ystack's lightweight documentation layer. Keep the repository's current product behavior understandable without requiring a full specification framework for every task.
 
 This skill is intentionally small. It distinguishes:
 
@@ -20,7 +20,7 @@ Do not combine those into one ever-growing document.
 
 ## Portability (required)
 
-1. Read the [pstack capability contract](../pstack/references/capability-contract.md), [workflow-quality defaults](../pstack/references/workflow-quality.md), and the active host adapter before delegation.
+1. Read the [ystack capability contract](../pstack/references/capability-contract.md), [workflow-quality defaults](../pstack/references/workflow-quality.md), and the active host adapter before delegation. The `pstack` path is the temporary compatibility runtime namespace, not the public project name.
 2. Use `explore` to discover existing documentation and behavior, `implement` for bounded documentation edits, `review` for independent convergence checks, `ask_user` only for product intent that evidence cannot settle, and `verify` for observable behavior.
 3. Keep paths repository-relative. Do not depend on one vendor's session, transcript, or rules directory.
 4. Small documentation decisions stay on the lead agent. Use helpers only when independent investigation or review will reduce a real blind spot.
