@@ -25,7 +25,7 @@ Portable entry point for the pstack engineering system. It preserves the upstrea
 
 1. Create a todo list. The first item reads the Principles index in `poteto-mode` or `references/principles-summary.md`, then opens every leaf principle that affects a real decision.
 2. Match a playbook under `playbooks/` and copy its steps into the todo list before adding task-specific work.
-3. Route to sibling skills as the playbook requires: `how`, `why`, `architect`, `arena`, `swarm`, `interrogate`, `tdd`, `unslop`, and the verification skills.
+3. Route to sibling skills as the playbook requires: `how`, `why`, `architect`, `arena`, `swarm`, `interrogate`, `living-spec`, `tdd`, `unslop`, and the verification skills.
 4. Use `verify` before declaring completion. A passing proxy is not proof when the reported problem appears on another surface.
 5. State any degraded capability, such as unavailable helper spawning, model selection, transcript access, or runtime control.
 
@@ -54,6 +54,8 @@ The entry pack includes:
 **Understanding and design:** `how`, `why`, `recall`, `blast-radius`, `architect`, `arena`, `swarm`, `interrogate`, `teach`.
 
 **Execution and adaptation:** `figure-it-out`, `reflect`, `automate-me`, `setup-pstack`, `show-me-your-work`, `tdd`, `typescript-best-practices`.
+
+**Documentation and continuity:** `living-spec` maintains current product truth, temporary change briefs, and durable ADRs without forcing a full specification framework.
 
 **Verification:** `create-verification-skill`, `maintain-verification-skill`.
 

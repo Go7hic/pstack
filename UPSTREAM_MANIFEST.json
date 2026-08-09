@@ -13,6 +13,7 @@
     "capability_contract_version": "1.0.0",
     "hand_maintained_skills": [
       "pstack",
+      "living-spec",
       "poteto-mode",
       "how",
       "why",
