@@ -1,36 +1,46 @@
 # Coverage
 
-This pack aims for **full upstream pstack capability coverage**, ported to Agent Skills + adapters.
+ystack aims for full upstream pstack capability coverage, ported to Agent Skills plus host adapters and extended with portable-only workflows.
 
-## Skills (46)
+## Skills (48)
 
-All upstream skills under `skills/` plus the portable additions `pstack` and `living-spec`.
+The pack includes the upstream-derived skill set, the public `ystack` entry and `setup-ystack`, the `living-spec` addition, and legacy `pstack` / `setup-pstack` compatibility aliases.
 
 ## Playbooks (23)
 
-Mirrored in `skills/poteto-mode/playbooks/` and `skills/pstack/playbooks/`.
+Mirrored in `skills/poteto-mode/playbooks/` and `skills/pstack/playbooks/` during the compatibility window.
 
 ## Intentionally adapted (not 1:1 Cursor runtime)
 
-| Upstream | Portable treatment |
+| Upstream | ystack treatment |
 | --- | --- |
-| `Task` / `subagent_type` | capability verbs + per-host adapters (parallel by default on modern agents) |
-| Claude Code `Agent`/`Task` | `adapters/claude-code.md` (`Explore`, `general-purpose`, multi-spawn one turn) |
-| Droid `Task` + custom droids | `adapters/droid.md` (`run_in_background` / `TaskOutput`) |
-| OpenCode `task` | `adapters/opencode.md` (`explore` / `general` / `scout`) |
+| `Task` / `subagent_type` | capability verbs + per-host adapters |
+| Claude Code `Agent`/`Task` | `adapters/claude-code.md` |
+| Droid `Task` + custom droids | `adapters/droid.md` |
+| OpenCode `task` | `adapters/opencode.md` |
 | Codex multi-agent | `adapters/codex.md` |
-| `poteto-agent` / Comment Sicko types | rubric markdown under `pstack/references/agents/` |
-| Cursor model slugs | `model_role` + setup-pstack override file |
+| `poteto-agent` / Comment Sicko types | portable rubric markdown |
+| Cursor model slugs | `model_role` + `/setup-ystack` override file |
 | `AskQuestion` | `ask_user` |
-| `/loop` | long-run/loop if available, else continue |
-| `watch-pr` scripts | optional; babysit falls back to `gh` |
-| poteto-mode `scripts/` (orch, watch-pr) | omitted from pack copy (Cursor tooling); playbooks note fallbacks |
-| benny automations | kept under `references/automations/benny/skill-templates/` as `INSTRUCTIONS.md` (not discoverable by `npx skills add`) |
+| `/loop` | host long-running mechanism when available, otherwise explicit continuation |
+| `watch-pr` scripts | optional; Babysit falls back to the active forge interface |
+| upstream poteto-mode scripts | omitted when they depend on Cursor-only runtime behavior |
+| Benny automations | kept as non-installable source templates under `references/automations/benny/` |
 
 ## Portable-only additions
 
-`living-spec` adds an optional current-product-truth workflow for solo projects. It is intentionally not part of upstream pstack and does not replace OpenSpec or another repository-native specification system.
+- `ystack` — primary public entry.
+- `setup-ystack` — preferred model configuration entry.
+- `living-spec` — lightweight current-product-truth convergence for solo projects.
+- portability, mirror, model-schema, link, and branding audits.
 
-## External (never in upstream pstack either)
+## Compatibility
 
-`deslop`, `control-cli`, `control-ui` from `cursor-team-kit`.
+- `/pstack` routes to `/ystack`.
+- `/setup-pstack` routes to `/setup-ystack`.
+- legacy `pstack-models.*` files remain readable after ystack-named overrides become preferred.
+- upstream names remain in credits, lineage metadata, and compatibility paths.
+
+## External
+
+`deslop`, `control-cli`, and `control-ui` from `cursor-team-kit` are not bundled; use equivalent host capabilities.

@@ -1,5 +1,5 @@
 ---
-description: pstack model overrides
+description: ystack model overrides
 alwaysApply: true
 ---
 

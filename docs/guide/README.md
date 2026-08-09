@@ -1,10 +1,10 @@
-# The pstack guide
+# The ystack guide
 
-pstack works best when you stop micromanaging the agent. You describe what you want and how you'll know it's done. `/poteto-mode` picks the playbook, runs the other skills as the steps need them, and shows you the evidence. This guide teaches that habit with realistic prompts.
+ystack works best when you stop micromanaging the agent. You describe what you want and how you'll know it is done. `/ystack` picks the playbook, runs the other skills as the steps need them, and shows you the evidence. `/poteto-mode` remains available when you want the full upstream-style mode contract.
 
 Here's what you'll learn:
 
-1. [Set up pstack](./01-setup.md). Install the plugin and pick your models.
+1. [Set up ystack](./01-setup.md). Install the pack and pick your models.
 2. [Route work through `/poteto-mode`](./02-poteto-mode.md). Give it a goal and watch it pick a playbook.
 3. [Understand the code](./03-understand.md). `/how`, `/why`, `/teach`, and `/recall` before you edit anything.
 4. [Design the change](./04-design.md). `/architect`, `/arena`, `/swarm`, and `/interrogate` before code locks in a shape.
@@ -22,9 +22,9 @@ Read the pages in order the first time. After that, each page stands alone.
 Give the agent a goal and a way to check it, in your own words:
 
 ```text
-/poteto-mode the export writes duplicate rows when a retry lands mid-run. repro first, then fix and verify.
+/ystack the export writes duplicate rows when a retry lands mid-run. repro first, then fix and verify.
 ```
 
-You don't need to name a playbook or list skills. "repro first" and a checkable outcome are all the routing signal `/poteto-mode` needs. It matches the Bug fix playbook, copies the steps into a todo list, and calls the right skills as each step fires.
+You do not need to name a playbook or list skills. "repro first" and a checkable outcome are all the routing signal ystack needs. It matches the Bug fix playbook, copies the steps into a todo list, and calls the right skills as each step fires.
 
-Next: [Set up pstack](./01-setup.md).
+Next: [Set up ystack](./01-setup.md).
