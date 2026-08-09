@@ -19,7 +19,7 @@ See [INSTALL.md](./INSTALL.md) for per-agent selection, optional skills.sh insta
 | Area | Skills and assets |
 | --- | --- |
 | Entry | `pstack`, `poteto-mode` |
-| Workflow | `how`, `why`, `recall`, `blast-radius`, `architect`, `arena`, `swarm`, `interrogate`, `figure-it-out`, `teach`, `reflect`, `automate-me`, `setup-pstack`, `show-me-your-work`, `create-verification-skill`, `maintain-verification-skill`, `tdd`, `typescript-best-practices` |
+| Workflow | `how`, `why`, `recall`, `blast-radius`, `architect`, `arena`, `swarm`, `interrogate`, `figure-it-out`, `teach`, `reflect`, `automate-me`, `setup-pstack`, `show-me-your-work`, `living-spec`, `create-verification-skill`, `maintain-verification-skill`, `tdd`, `typescript-best-practices` |
 | Quality | `unslop`, `no-comments`, `technical-writing`, `bro` |
 | Principles | all 21 `principle-*` leaf skills |
 | Playbooks | 23 mirrored under `skills/poteto-mode/playbooks/` and `skills/pstack/playbooks/` |
@@ -37,6 +37,16 @@ See [INSTALL.md](./INSTALL.md) for per-agent selection, optional skills.sh insta
 6. The lead agent always owns synthesis, the final patch judgment, and verification on the narrowest meaningful real surface.
 
 The portable layer is an instruction protocol, not an emulator. It preserves workflow intent across hosts, but it cannot manufacture features a host does not expose. A runtime without subagents, model selection, browser control, or persistent modes will use the documented fallback and state the limitation.
+
+## Living product documentation
+
+`living-spec` is an optional, solo-friendly documentation layer for projects that use pstack without a full specification framework. It keeps three concerns separate:
+
+- `docs/product/` describes the product's current, verified behavior;
+- `docs/changes/` holds a temporary brief only for changes that span sessions, pull requests, or several modules;
+- `docs/decisions/` records durable, non-obvious technical decisions with meaningful alternatives.
+
+The skill does not require documentation for internal refactors or trivial edits. It first inspects the repository for an existing canonical system such as OpenSpec, ADRs, or product docs, and reuses that system instead of creating a competing source of truth. Feature work converges documentation only after real-surface verification.
 
 ## Session and mode behavior
 

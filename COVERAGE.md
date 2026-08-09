@@ -2,9 +2,9 @@
 
 This pack aims for **full upstream pstack capability coverage**, ported to Agent Skills + adapters.
 
-## Skills (45)
+## Skills (46)
 
-All upstream skills under `skills/` plus the portable hub `pstack`.
+All upstream skills under `skills/` plus the portable additions `pstack` and `living-spec`.
 
 ## Playbooks (23)
 
@@ -26,6 +26,10 @@ Mirrored in `skills/poteto-mode/playbooks/` and `skills/pstack/playbooks/`.
 | `watch-pr` scripts | optional; babysit falls back to `gh` |
 | poteto-mode `scripts/` (orch, watch-pr) | omitted from pack copy (Cursor tooling); playbooks note fallbacks |
 | benny automations | kept under `references/automations/benny/skill-templates/` as `INSTRUCTIONS.md` (not discoverable by `npx skills add`) |
+
+## Portable-only additions
+
+`living-spec` adds an optional current-product-truth workflow for solo projects. It is intentionally not part of upstream pstack and does not replace OpenSpec or another repository-native specification system.
 
 ## External (never in upstream pstack either)
 
