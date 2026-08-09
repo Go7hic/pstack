@@ -10,9 +10,9 @@ One attempt at a hard design locks in the first shape the model thought of. `/ar
 /architect design the import pipeline before writing any code. i care most about how callers use it.
 ```
 
-[`/architect`](../../skills/architect/SKILL.md) grounds itself first, running `/how` over the code the design touches and `/why` when it moves ownership or layers. Then it runs `/arena` to produce competing design sketches, with the caller's usage written first in each, followed by types, signatures, and a module map.
+[`/architect`](../../skills/architect/SKILL.md) grounds itself first, running `/how` over the code the design touches and `/why` when it moves ownership or layers. Then it runs `/arena` to produce competing design sketches, with caller usage first, followed by types, signatures, and a module map.
 
-By default it proceeds straight from the synthesized design into implementation. If you want to see the design first, say so:
+By default it proceeds from the synthesized design into implementation. Ask for a checkpoint when you want to review the design first:
 
 ```text
 /architect with checkpoint. stop and show me before implementing.
@@ -24,7 +24,7 @@ By default it proceeds straight from the synthesized design into implementation.
 /arena take my prompt to the arena verbatim. i want to compare their proposals with yours.
 ```
 
-[`/arena`](../../skills/arena/SKILL.md) is the general tool underneath. N subagents attempt the same design or code brief in parallel, each writing to its own worktree or directory. A read-only judge, on a different model family when your configuration allows one, scores every candidate against a rubric. The coordinator reads each candidate end to end, picks a base, grafts in the best ideas from the losers, and verifies the result.
+[`/arena`](../../skills/arena/SKILL.md) gives N subagents the same design or code brief, each in an isolated output location. A read-only cross-judge scores candidates against a rubric. The lead reads every candidate, picks a base, grafts the strongest parts from the others, and verifies the synthesized result.
 
 ```mermaid
 flowchart LR
@@ -40,11 +40,7 @@ flowchart LR
     H --> I[Verify]
 ```
 
-The panel comes from your [`/setup-pstack`](../../skills/setup-pstack/SKILL.md) configuration, and you can adjust it per task. Ask for more candidates when the decision matters, fewer when it doesn't:
-
-```text
-/arena this, 5 candidates. the cache key format is expensive to change later.
-```
+The panel comes from your [`/setup-ystack`](../../skills/setup-ystack/SKILL.md) configuration, and you can adjust it per task.
 
 ## Cover slices and races with `/swarm`
 
@@ -52,30 +48,24 @@ The panel comes from your [`/setup-pstack`](../../skills/setup-pstack/SKILL.md) 
 /swarm check every package under packages/ against its check.sh. one worker per package. one report.
 ```
 
-[`/swarm`](../../skills/swarm/SKILL.md) fans N workers across independent slices, coverage matrices, gauntlet lanes, exploration partitions, or declared race arms. Each worker gets its own scope and check, then reports `PASS`, `ISSUES`, or `BLOCKED`. The parent waits for the workers and returns one compact report with any gaps or dropouts.
-
-Reach for it when parallelism buys coverage or lets independent checks race. `/arena` gives every worker the same design or code brief, then picks a base and grafts the best parts. `/swarm` covers slices or runs a race with a selection rule declared up front. It does not use the base-selection and grafting ceremony.
+[`/swarm`](../../skills/swarm/SKILL.md) fans workers across independent slices, coverage matrices, gauntlet lanes, exploration partitions, or declared race arms. `/arena` gives every worker the same artifact and synthesizes one winner; `/swarm` covers distinct slices or races independently.
 
 ## Break it with `/interrogate`
 
 ```text
-/interrogate the whole branch, but skeptically. no nitpicks unless it's an actual bug or regression.
+/interrogate the whole branch, but skeptically. no nitpicks unless it is an actual bug or regression.
 ```
 
-[`/interrogate`](../../skills/interrogate/SKILL.md) sends the same diff, intent, and rubric to several reviewers on different model families. Model diversity is the point. Different models have different blind spots, so a finding two models raise independently is high-confidence signal. The lead sorts everything into `Act on`, `Consider`, `Noted`, and `Dismissed`, with a reason for each dismissal, and applies nothing automatically.
-
-Read the dismissals too. The lead is a pragmatic senior engineer, not an oracle, and you can override it.
+[`/interrogate`](../../skills/interrogate/SKILL.md) sends the same diff, intent, and rubric to several reviewers. The lead deduplicates findings and sorts them into `Act on`, `Consider`, `Noted`, and `Dismissed`, with reasons.
 
 ## How much design work does a task deserve?
 
-You might be wondering whether every change needs this. No. Most changes need none of it. A rough ladder:
+- A small finished change you are unsure about may need `/interrogate` alone.
+- Boundary-crossing work earns `/architect`, which brings `/arena` with it.
+- A standalone artifact with several valid shapes can use `/arena` directly.
+- A coverage matrix or parallel race belongs to `/swarm`.
+- A contested, expensive-to-reverse design gets `/architect`, then `/interrogate` before shipping.
 
-- A small, finished change you're unsure about needs `/interrogate` alone.
-- A change that crosses function boundaries or moves ownership earns `/architect`, which brings `/arena` with it.
-- A standalone decision where independent attempts would help, like naming, formats, or an algorithm, is `/arena` directly.
-- A coverage matrix, set of parallel checks, or race with declared arms is `/swarm`.
-- A contested design that's expensive to reverse gets `/architect`, then `/interrogate` before shipping.
-
-`/poteto-mode` already applies this ladder. Boundary-crossing work triggers `/architect` on its own, so you reach for these directly mainly when you want more or less scrutiny than the default.
+`/ystack` and `/poteto-mode` apply this ladder automatically.
 
 Next: [Build and clean the change](./05-build-and-clean.md).

@@ -1,37 +1,37 @@
 # Adapter: OpenCode
 
-Use inside [OpenCode](https://opencode.ai/docs/agents/) when the `task` tool can spawn subagents.
+Use inside OpenCode when the task tool can spawn subagents.
 
 ## Detect
 
-- `task` tool for subagent invocation
-- Built-in subagents: `general` (parallel multi-step / can edit), `explore` (fast read-only), `scout` (external docs / deps, read-only)
-- Skills under `~/.config/opencode/skills/`, `~/.agents/skills/`, or `~/.claude/skills/`
+- task tool for subagent invocation
+- built-in read-only and write-capable subagents
+- skills under `~/.config/opencode/skills/`, `~/.agents/skills/`, or another configured root
 
 ## Capability map
 
 | Capability | How |
 | --- | --- |
-| `explore` | `task` → subagent `explore` (read-only). Use `scout` when the slice is upstream docs/deps rather than the local tree. |
-| `implement` | `task` → subagent `general` (or a custom write-capable subagent). Disjoint file scopes across workers. |
-| `review` | `task` → read-oriented subagent / custom reviewer with `edit: deny`. Distinct rubrics per reviewer. |
-| `parallel` | Issue **multiple** `task` calls for independent slices in one turn when the runtime schedules them concurrently. If the host serializes `task`, still issue the batch as separate tasks and note sequential execution; do not invent a fake parallel API. |
-| `ask_user` | Prefer OpenCode `question` tool when available; else plain chat. Facts you can observe → do not ask. |
-| `verify` | `bash` / browser tools. Narrowest meaningful check. |
-| `model_role` | Set per-subagent `model` in agent config or task override when confirmed available (`provider/model-id`). Otherwise inherit. |
+| `explore` | Use a read-only explorer; use an external-docs scout for dependency research. |
+| `implement` | Use a write-capable general agent with disjoint file scope. |
+| `review` | Use a read-oriented reviewer with an explicit rubric and edit denial. |
+| `parallel` | Issue multiple independent task calls in one turn when the runtime schedules them concurrently. |
+| `ask_user` | Use the question tool when available, otherwise plain chat. |
+| `verify` | Bash and browser tools on the matching surface. |
+| `model_role` | Use confirmed per-agent model configuration or inherit. |
 
 ## Policy
 
-- Lead (primary Build/Plan) owns synthesis, final patch judgment, and verification.
-- Do not enable unbounded recursive `permission.task` on every subagent globally — prefer task permission on the primary only, or specific subagent patterns.
+- The primary lead owns synthesis, final patch judgment, and verification.
+- Do not enable unbounded recursive task permission globally.
 - Keep worker write scopes disjoint.
-- Hidden custom subagents are fine for programmatic poteto-style workers.
-- If `task` is denied or missing, fall back to `generic.md`.
+- Hidden custom agents are acceptable for Poteto-style workers.
+- Fall back to `generic.md` when task is unavailable or denied.
 
 ## Model override file
 
-`~/.agents/pstack-models.md` and/or OpenCode agent model fields. `/setup-pstack` should write the portable override and optionally mirror role models into `opencode.json` agent entries when the user wants sticky per-agent models.
+Prefer `~/.agents/ystack-models.md` and/or OpenCode-native agent model fields. `/setup-ystack` writes the portable override and may mirror roles into host config when the user requests it. Honor `~/.agents/pstack-models.md` as a legacy fallback.
 
 ## Poteto worker rubric
 
-Create an optional OpenCode subagent (markdown under `~/.config/opencode/agents/`) whose prompt includes `../agents/poteto-agent.md`, then `task` that agent for playbook implementation steps.
+An optional OpenCode agent may include `../agents/poteto-agent.md` and be selected for implementation steps.

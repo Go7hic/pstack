@@ -6,13 +6,18 @@
     "commit": "UNPINNED",
     "synced_at": null,
     "last_import_report": null,
-    "notes": "Pin commit SHA on each upstream import via scripts/import_upstream.py. Hand-maintained SKILL.md names below are protected; poteto-mode playbooks/references still import. Do not auto-merge sync PRs."
+    "notes": "Pin commit SHA on each upstream import via scripts/import_upstream.py. Protect public ystack entries, compatibility aliases, portable-only workflows, and local adapters. Do not auto-merge sync PRs."
   },
   "portable": {
-    "patch_version": "0.2.0",
+    "public_name": "ystack",
+    "legacy_names": ["pstack"],
+    "patch_version": "0.3.0",
     "capability_contract_version": "1.0.0",
     "hand_maintained_skills": [
+      "ystack",
+      "setup-ystack",
       "pstack",
+      "setup-pstack",
       "living-spec",
       "poteto-mode",
       "how",
@@ -24,8 +29,7 @@
       "reflect",
       "recall",
       "automate-me",
-      "show-me-your-work",
-      "setup-pstack"
+      "show-me-your-work"
     ]
   }
 }

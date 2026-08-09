@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/Go7hic/pstack/skills/pstack/references/model-override.schema.json",
-  "title": "pstack model override",
+  "$id": "https://github.com/Go7hic/ystack/blob/main/skills/pstack/references/model-override.schema.json",
+  "title": "ystack model override",
   "type": "object",
   "additionalProperties": false,
   "required": ["schema_version", "roles"],
